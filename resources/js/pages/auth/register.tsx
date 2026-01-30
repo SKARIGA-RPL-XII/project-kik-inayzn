@@ -1,114 +1,106 @@
-import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import AuthLayout from '@/layouts/auth-layout';
-import { login } from '@/routes';
-import { store } from '@/routes/register';
-import { Form, Head } from '@inertiajs/react';
+import { useForm, Link } from '@inertiajs/react';
+import React from 'react';
 
 export default function Register() {
+    const { data, setData, post, processing, errors } = useForm({
+        username: '',
+        email: '',
+        password: '',
+        password_confirmation: '',
+    });
+
+    const submit = (e: React.FormEvent) => {
+        e.preventDefault();
+        post('/register');
+    };
+
     return (
-        <AuthLayout
-            title="Create an account"
-            description="Enter your details below to create your account"
-        >
-            <Head title="Register" />
-            <Form
-                {...store.form()}
-                resetOnSuccess={['password', 'password_confirmation']}
-                disableWhileProcessing
-                className="flex flex-col gap-6"
-            >
-                {({ processing, errors }) => (
-                    <>
-                        <div className="grid gap-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
-                                <Input
-                                    id="name"
-                                    type="text"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="name"
-                                    name="name"
-                                    placeholder="Full name"
-                                />
-                                <InputError
-                                    message={errors.name}
-                                    className="mt-2"
-                                />
-                            </div>
+        <div className="min-h-screen flex items-center justify-center bg-[#2D4F2D] p-6">
+            <div className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden">
+                {/* Header Card (Sign Up) */}
+                <div className="bg-[#1B331B] py-5">
+                    <h2 className="text-center text-3xl font-bold text-white tracking-wider">
+                        Sign Up
+                    </h2>
+                </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="email"
-                                    name="email"
-                                    placeholder="email@example.com"
-                                />
-                                <InputError message={errors.email} />
-                            </div>
+                {/* Form Body */}
+                <div className="p-8 space-y-5">
+                    <form onSubmit={submit} className="space-y-4">
+                        {/* Input Username */}
+                        <div>
+                            <label className="block text-[#1B331B] font-bold mb-1">Username</label>
+                            <input
+                                type="text"
+                                placeholder="Masukkan Username"
+                                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-inner focus:outline-none focus:ring-2 focus:ring-[#6B8E6B] text-gray-900 placeholder:text-gray-400"
+                                value={data.username}
+                                onChange={e => setData('username', e.target.value)}
+                            />
+                            {errors.username && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.username}</p>}
+                        </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">Password</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    required
-                                    tabIndex={3}
-                                    autoComplete="new-password"
-                                    name="password"
-                                    placeholder="Password"
-                                />
-                                <InputError message={errors.password} />
-                            </div>
+                        {/* Input Email */}
+                        <div>
+                            <label className="block text-[#1B331B] font-bold mb-1">Email</label>
+                            <input
+                                type="email"
+                                placeholder="Masukkan Email"
+                                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-inner focus:outline-none focus:ring-2 focus:ring-[#6B8E6B] text-gray-900 placeholder:text-gray-400"
+                                value={data.email}
+                                onChange={e => setData('email', e.target.value)}
+                            />
+                            {errors.email && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.email}</p>}
+                        </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    Confirm password
-                                </Label>
-                                <Input
-                                    id="password_confirmation"
-                                    type="password"
-                                    required
-                                    tabIndex={4}
-                                    autoComplete="new-password"
-                                    name="password_confirmation"
-                                    placeholder="Confirm password"
-                                />
-                                <InputError
-                                    message={errors.password_confirmation}
-                                />
-                            </div>
+                        {/* Input Password */}
+                        <div>
+                            <label className="block text-[#1B331B] font-bold mb-1">Password</label>
+                            <input
+                                type="password"
+                                placeholder="Masukkan Password"
+                                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-inner focus:outline-none focus:ring-2 focus:ring-[#6B8E6B] text-gray-900 placeholder:text-gray-400"
+                                value={data.password}
+                                onChange={e => setData('password', e.target.value)}
+                            />
+                            {errors.password && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.password}</p>}
+                        </div>
 
-                            <Button
+                        {/* Input Password Confirmation */}
+                        <div>
+                            <label className="block text-[#1B331B] font-bold mb-1">Password confirmation</label>
+                            <input
+                                type="password"
+                                placeholder="Masukkan Password"
+                                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-inner focus:outline-none focus:ring-2 focus:ring-[#6B8E6B] text-gray-900 placeholder:text-gray-400"
+                                value={data.password_confirmation}
+                                onChange={e => setData('password_confirmation', e.target.value)}
+                            />
+                            {errors.password_confirmation && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.password_confirmation}</p>}
+                        </div>
+
+                        {/* Tombol Register */}
+                        <div className="pt-4">
+                            <button
                                 type="submit"
-                                className="mt-2 w-full"
-                                tabIndex={5}
-                                data-test="register-user-button"
+                                disabled={processing}
+                                className="w-full bg-[#F2EDE4] text-[#2D4F2D] font-bold py-3 rounded-lg shadow-md hover:bg-[#E5DFD3] active:scale-95 transition-all border border-[#D9D1B0] text-lg"
                             >
-                                {processing && <Spinner />}
-                                Create account
-                            </Button>
+                                {processing ? 'Registering...' : 'Register'}
+                            </button>
                         </div>
+                    </form>
 
-                        <div className="text-center text-sm text-muted-foreground">
-                            Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={6}>
-                                Log in
-                            </TextLink>
-                        </div>
-                    </>
-                )}
-            </Form>
-        </AuthLayout>
+                    <div className="text-center pt-2">
+                        <p className="text-gray-600 font-medium text-sm">
+                            Sudah punya akun?{' '}
+                            <Link href="/login" className="text-blue-700 hover:underline font-bold ml-1">
+                                Login sekarang
+                            </Link>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }

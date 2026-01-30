@@ -1,120 +1,97 @@
-import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import AuthLayout from '@/layouts/auth-layout';
-import { register } from '@/routes';
-import { store } from '@/routes/login';
-import { request } from '@/routes/password';
-import { Form, Head } from '@inertiajs/react';
+import { useForm, Link } from '@inertiajs/react';
+import React from 'react';
 
-type Props = {
-    status?: string;
-    canResetPassword: boolean;
-    canRegister: boolean;
-};
+export default function Login() {
+    const { data, setData, post, processing, errors } = useForm({
+        email: '',    
+        password: '',
+    });
 
-export default function Login({
-    status,
-    canResetPassword,
-    canRegister,
-}: Props) {
+    const submit = (e: React.FormEvent) => {
+        e.preventDefault();
+        post('/login');
+    };
+
     return (
-        <AuthLayout
-            title="Log in to your account"
-            description="Enter your email and password below to log in"
-        >
-            <Head title="Log in" />
+        <div className="min-h-screen flex flex-col md:flex-row bg-[#F8F9FA]">
+            {/* Sisi Kiri: Form Login */}
+            <div className="w-full md:w-[70%] lg:w-[75%] flex flex-col p-8 md:p-16">
+                
+                {/* Logo Section */}
+                <div className="flex items-center gap-2 mb-10 md:mb-16">
+                    <div className="flex items-center">
+                        <span className="text-[#4F7942] font-bold text-4xl">PK</span>
+                        <span className="ml-2 text-2xl font-bold text-[#4F7942]">PropertyKu</span>
+                    </div>
+                </div>
 
-            <Form
-                {...store.form()}
-                resetOnSuccess={['password']}
-                className="flex flex-col gap-6"
-            >
-                {({ processing, errors }) => (
-                    <>
-                        <div className="grid gap-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    name="email"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="email"
-                                    placeholder="email@example.com"
-                                />
-                                <InputError message={errors.email} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <div className="flex items-center">
-                                    <Label htmlFor="password">Password</Label>
-                                    {canResetPassword && (
-                                        <TextLink
-                                            href={request()}
-                                            className="ml-auto text-sm"
-                                            tabIndex={5}
-                                        >
-                                            Forgot password?
-                                        </TextLink>
-                                    )}
-                                </div>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    name="password"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="current-password"
-                                    placeholder="Password"
-                                />
-                                <InputError message={errors.password} />
-                            </div>
-
-                            <div className="flex items-center space-x-3">
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    tabIndex={3}
-                                />
-                                <Label htmlFor="remember">Remember me</Label>
-                            </div>
-
-                            <Button
-                                type="submit"
-                                className="mt-4 w-full"
-                                tabIndex={4}
-                                disabled={processing}
-                                data-test="login-button"
-                            >
-                                {processing && <Spinner />}
-                                Log in
-                            </Button>
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200">
+                        
+                        {/* Header Card dengan Gradient (Sign In) */}
+                        <div className="bg-gradient-to-r from-[#D9D1B0] to-[#6B8E6B] py-6 shadow-md">
+                            <h2 className="text-center text-3xl font-bold text-white tracking-wide">
+                                Sign In
+                            </h2>
                         </div>
 
-                        {canRegister && (
-                            <div className="text-center text-sm text-muted-foreground">
-                                Don't have an account?{' '}
-                                <TextLink href={register()} tabIndex={5}>
-                                    Sign up
-                                </TextLink>
-                            </div>
-                        )}
-                    </>
-                )}
-            </Form>
+                        {/* Form Body */}
+                        <div className="p-8 md:p-10 space-y-5">
+                            <form onSubmit={submit} className="space-y-5">
+                                
+                                {/* Input Email */}
+                                <div>
+                                    <input
+                                        type="email"
+                                        placeholder="Masukkan Email"
+                                        // Tambah text-gray-900 agar tulisan yang diketik terlihat jelas
+                                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#6B8E6B] focus:border-transparent transition-all text-gray-900 placeholder:text-gray-400"
+                                        value={data.email}
+                                        onChange={e => setData('email', e.target.value)}
+                                    />
+                                    {errors.email && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.email}</p>}
+                                </div>
 
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
+                                {/* Input Password */}
+                                <div>
+                                    <input
+                                        type="password"
+                                        placeholder="Masukkan Password"
+                                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#6B8E6B] focus:border-transparent transition-all text-gray-900 placeholder:text-gray-400"
+                                        value={data.password}
+                                        onChange={e => setData('password', e.target.value)}
+                                    />
+                                    {errors.password && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.password}</p>}
+                                </div>
+
+                                {/* Tombol Login */}
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="w-full bg-[#F2EDE4] text-[#2D4F2D] font-extrabold py-3 rounded-lg shadow-md hover:bg-[#E5DFD3] active:scale-95 transition-all border border-[#D9D1B0] text-xl uppercase tracking-wider"
+                                >
+                                    {processing ? 'Loading...' : 'Login'}
+                                </button>
+                            </form>
+
+                            {/* Link Daftar */}
+                            <div className="text-center pt-2">
+                                <p className="text-gray-700 font-medium">
+                                    Belum punya akun?{' '}
+                                    <Link href="/register" className="text-blue-700 hover:underline font-bold ml-1">
+                                        Daftar sekarang
+                                    </Link>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            )}
-        </AuthLayout>
+            </div>
+
+            {/* Sisi Kanan: Dekorasi Hijau Tua (Dibuat Ramping) */}
+            <div className="hidden md:block md:w-[30%] lg:w-[25%] bg-[#2D4F2D] shadow-inner">
+                {/* Bagian ini sekarang lebih ramping (hanya 25-30% lebar layar) */}
+            </div>
+        </div>
     );
 }
