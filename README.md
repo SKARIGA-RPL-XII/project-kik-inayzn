@@ -1,2 +1,5 @@
-# project-kik-inayzn
-project-kik-inayzn created by GitHub Classroom
+PROPERTYKU: PLATFORM PENJUALAN PROPERTI DIGITAL BERBASIS REACT JS DAN LARAVEL
+
+
+Inayah Zahro Ningrum/18
+XIIRPA
