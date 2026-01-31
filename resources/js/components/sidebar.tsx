@@ -1,6 +1,14 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 
 export default function Sidebar() {
+    // Fungsi untuk Logout dengan konfirmasi
+    const handleLogout = () => {
+        if (confirm('Apakah Anda yakin ingin keluar dari sistem?')) {
+            // Mengirim request POST ke rute logout di Laravel
+            router.post('/logout');
+        }
+    };
+
     return (
         <aside className="w-64 border-r bg-white shadow-sm flex flex-col h-screen sticky top-0">
             {/* Logo */}
@@ -15,7 +23,8 @@ export default function Sidebar() {
             <nav className="flex-1 p-4 space-y-2 text-sm overflow-y-auto">
                 <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Main Menu</p>
                 
-                <SidebarItem href="/" label="Dashboard" icon="📊" />
+                {/* Sesuaikan href dengan rute di web.php */}
+                <SidebarItem href="/admin/dashboard" label="Dashboard" icon="📊" />
                 <SidebarItem href="/produk" label="Produk" icon="🏠" />
                 <SidebarItem href="/kategori" label="Kategori" icon="📁" />
                 <SidebarItem href="/pengguna" label="Pengguna" icon="👥" />
@@ -24,10 +33,14 @@ export default function Sidebar() {
                 <SidebarItem href="/ulasan" label="Ulasan" icon="⭐" />
             </nav>
 
-            {/* Footer Sidebar (Opsional) */}
+            {/* Footer Sidebar */}
             <div className="p-4 border-t">
-                <button className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-md transition">
-                    <span>🚪</span> Keluar
+                <button 
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-md transition duration-200 group"
+                >
+                    <span className="text-lg group-hover:scale-110 transition-transform">🚪</span> 
+                    Logout
                 </button>
             </div>
         </aside>
@@ -43,9 +56,10 @@ function SidebarItem({
     label: string;
     icon?: string;
 }) {
-    // Ambil URL saat ini untuk menentukan state aktif
     const { url } = usePage();
-    const isActive = url === href;
+    
+    // Logika isActive agar lebih akurat (juga menangani sub-halaman)
+    const isActive = url === href || url.startsWith(href + '/');
 
     return (
         <Link

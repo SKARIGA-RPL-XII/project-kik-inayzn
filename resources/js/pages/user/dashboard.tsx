@@ -1,10 +1,17 @@
 import React from 'react';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react'; // Tambahkan router
 import { Search, MessageCircle, Heart, User, LogOut } from 'lucide-react';
 
 export default function UserDashboard() {
     // Mengambil data auth dari props global Inertia
     const { auth } = usePage().props as any;
+
+    // Fungsi Alert Konfirmasi Logout
+    const handleLogout = () => {
+        if (confirm('Apakah Anda yakin ingin keluar dari PropertyKu?')) {
+            router.post('/logout');
+        }
+    };
 
     return (
         <div className="min-h-screen bg-white">
@@ -27,18 +34,17 @@ export default function UserDashboard() {
                                 <span className="text-sm font-medium">Hi, {auth.user.username}</span>
                             </div>
                             
-                            <Link
-                                href="/logout"
-                                method="post"
-                                as="button"
-                                className="flex items-center gap-2 text-rose-300 hover:text-rose-100 transition-colors text-sm font-bold"
+                            {/* Tombol Logout dengan Alert */}
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-2 text-rose-300 hover:text-rose-100 transition-colors text-sm font-bold bg-transparent border-none cursor-pointer"
                             >
                                 <LogOut size={16} />
                                 Logout
-                            </Link>
+                            </button>
                         </div>
                     ) : (
-                        /* TAMPILAN JIKA BELUM LOGIN (SESUAI UI KAMU) */
+                        /* TAMPILAN JIKA BELUM LOGIN */
                         <div className="flex gap-8 items-center">
                             <Link href="/login" className="font-medium hover:text-emerald-200 transition-colors">Login</Link>
                             <Link href="/register" className="font-medium hover:text-emerald-200 transition-colors">Register</Link>
@@ -62,7 +68,7 @@ export default function UserDashboard() {
                         <input 
                             type="text" 
                             placeholder="Cari lokasi, nama perumahan..." 
-                            className="w-full py-4 px-6 pr-14 rounded-xl border-none shadow-2xl focus:ring-4 focus:ring-emerald-500/50 text-slate-700 text-lg"
+                            className="w-full py-4 px-6 pr-14 rounded-xl border-none shadow-2xl focus:ring-4 focus:ring-emerald-500/50 text-slate-700 text-lg outline-none"
                         />
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-[#1a432d] p-2 rounded-lg text-white">
                             <Search size={22} />
@@ -71,7 +77,7 @@ export default function UserDashboard() {
                 </div>
             </div>
 
-            {/* QUICK LINKS / CATEGORIES (Floating Layout) */}
+            {/* QUICK LINKS / CATEGORIES */}
             <div className="max-w-7xl mx-auto px-8 -mt-12 relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                     { label: 'Carikan Properti', icon: '🏠' },
@@ -97,17 +103,16 @@ export default function UserDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-                    {/* CARD PRODUCT */}
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="group bg-white overflow-hidden rounded-2xl border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-300">
                             <div className="relative h-64 overflow-hidden">
                                 <img 
                                     src="/images/house-card.jpg" 
                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                                    alt="Property"
                                 />
-                                {/* Tombol Wishlist (❤️) */}
                                 <button className="absolute top-4 right-4 p-3 bg-white/90 backdrop-blur-sm rounded-full text-slate-400 hover:text-rose-500 shadow-md transition-all active:scale-90">
-                                    <Heart size={22} fill="currentColor" className="text-transparent hover:text-rose-500" />
+                                    <Heart size={22} />
                                 </button>
                                 <div className="absolute bottom-4 left-4 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-md">
                                     DIJUAL
@@ -129,10 +134,10 @@ export default function UserDashboard() {
                 </div>
             </div>
 
-            {/* FOOTER SEDERHANA */}
+            {/* FOOTER */}
             <footer className="bg-slate-50 border-t py-10 text-center text-slate-400 text-sm">
                 &copy; 2026 PropertyKu. All rights reserved.
             </footer>
         </div>
     );
-}
+}    
