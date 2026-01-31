@@ -34,19 +34,25 @@ Route::middleware(['auth'])->group(function () {
         return Inertia::render('user/dashboard');
     })->name('user.dashboard');
 
-    // CRUD Produk
+    // --- CRUD PRODUK (PERBAIKAN STRUKTUR) ---
+    // Pastikan urutan: Index -> Create -> Store -> Resource sisanya
     Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
-    Route::resource('produk', ProdukController::class)->except(['index']);
+    Route::get('/produk/create', [ProdukController::class, 'create'])->name('produk.create');
+    Route::post('/produk', [ProdukController::class, 'store'])->name('produk.store');
     
-    // 2. TAMBAHKAN ROUTE KATEGORI DI SINI
+    // Resource untuk Edit, Update, Delete, Show
+    // Ini diletakkan di bawah agar /create tidak dianggap sebagai {id}
+    Route::resource('produk', ProdukController::class)->except(['index', 'create', 'store']);
+    
+    // --- KATEGORI ---
     Route::get('/kategori', [KategoriController::class, 'index'])->name('kategori.index');
     Route::resource('kategori', KategoriController::class)->except(['index']);
     
-    // Data Users
+    // --- DATA USERS ---
     Route::get('/pengguna', [UserController::class, 'index'])->name('user.index');
     Route::delete('/pengguna/{id}', [UserController::class, 'destroy'])->name('user.destroy');
 
-    //Data Ulasan
+    // --- DATA ULASAN ---
     Route::get('/ulasan', [ReviewController::class, 'index'])->name('ulasan.index');
     Route::delete('/ulasan/{id}', [ReviewController::class, 'destroy'])->name('ulasan.destroy');
 

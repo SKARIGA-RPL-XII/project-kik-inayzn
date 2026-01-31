@@ -7,7 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
-    protected $fillable = ['name', 'slug', 'description', 'price', 'stock'];
-    /** @use HasFactory<\Database\Factories\ProductFactory> */
     use HasFactory;
+
+    protected $table = 'produks'; // Sesuai nama di migration
+
+    protected $fillable = [
+        'nama_produk',
+        'kategori',
+        'harga',
+        'stok',
+        'status',
+        'deskripsi',
+        'gambar',
+    ];
 }
