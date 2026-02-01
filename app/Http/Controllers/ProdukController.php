@@ -3,21 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Category;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage; // Tambahkan ini untuk urusan hapus file
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class ProdukController extends Controller
 {
     /**
-     * Menampilkan daftar produk
+     * Menampilkan daftar produk dengan fitur pencarian
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::latest()->paginate(10);
+        $products = Product::query()
+            // Logika pencarian: mencari berdasarkan nama_produk atau kategori
+            ->when($request->search, function ($query, $search) {
+                $query->where('nama_produk', 'like', "%{$search}%")
+                      ->orWhere('kategori', 'like', "%{$search}%");
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString(); // Menjaga parameter URL saat pindah halaman (pagination)
 
         return Inertia::render('admin/produk/index', [
-            'products' => $products
+            'products' => $products,
+            'filters'  => $request->only(['search']) // Mengirim balik keyword pencarian ke React
         ]);
     }
 
@@ -26,7 +36,11 @@ class ProdukController extends Controller
      */
     public function create()
     {
-        return Inertia::render('admin/produk/create'); // Pastikan C besar jika nama file Create.tsx
+        $categories = Category::orderBy('name', 'asc')->get();
+
+        return Inertia::render('admin/produk/create', [
+            'categories' => $categories
+        ]); 
     }
 
     /**
@@ -60,9 +74,11 @@ class ProdukController extends Controller
     public function edit($id)
     {
         $produk = Product::findOrFail($id);
+        $categories = Category::orderBy('name', 'asc')->get();
 
-        return Inertia::render('admin/produk/edit', [ // Pastikan E besar jika nama file Edit.tsx
-            'produk' => $produk
+        return Inertia::render('admin/produk/edit', [ 
+            'produk' => $produk,
+            'categories' => $categories
         ]);
     }
 
@@ -83,16 +99,14 @@ class ProdukController extends Controller
             'gambar'      => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
         ]);
 
-        // Cek jika ada file gambar baru yang diunggah
         if ($request->hasFile('gambar')) {
-            // Hapus gambar lama jika ada
             if ($produk->gambar) {
                 Storage::disk('public')->delete($produk->gambar);
             }
-
-            // Simpan gambar baru
             $path = $request->file('gambar')->store('produk', 'public');
             $validated['gambar'] = $path;
+        } else {
+            unset($validated['gambar']);
         }
 
         $produk->update($validated);
@@ -107,7 +121,6 @@ class ProdukController extends Controller
     {
         $produk = Product::findOrFail($id);
 
-        // Hapus file gambar dari storage sebelum hapus data di database
         if ($produk->gambar) {
             Storage::disk('public')->delete($produk->gambar);
         }

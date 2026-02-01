@@ -9,15 +9,11 @@ class Category extends Model
 {
     use HasFactory;
 
-    // Menentukan kolom mana saja yang boleh diisi secara massal
     protected $fillable = ['name'];
 
-    /**
-     * Relasi ke Product: Satu kategori memiliki banyak produk.
-     * Ini yang memungkinkan fungsi withCount('products') di Controller bekerja.
-     */
+    /* Relasi ke Product: Satu kategori memiliki banyak produk */
     public function products()
     {
-        return $this->hasMany(Product::class);
+        return $this->hasMany(Product::class, 'kategori', 'name');
     }
 }
