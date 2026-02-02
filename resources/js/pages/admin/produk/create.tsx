@@ -102,7 +102,9 @@ export default function CreateProduk({ categories }: CreateProps) {
                                 <select 
                                     value={data.kategori}
                                     onFocus={() => { setFocusedField('kategori'); clearErrors('kategori'); }}
-                                    className={`w-full p-3 rounded-lg border outline-none bg-white text-slate-900 font-medium cursor-pointer ${ (focusedField !== 'kategori' && (errors.kategori || (isErrorShake && !data.kategori))) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
+                                    className={`w-full p-3 rounded-lg border outline-none bg-white text-slate-900 font-medium cursor-pointer 
+                                    ${ (focusedField !== 'kategori' && (errors.kategori || (isErrorShake && !data.kategori))) ? 
+                                    'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                     onChange={e => setData('kategori', e.target.value)}
                                 >
                                     <option value="">Pilih kategori properti</option>

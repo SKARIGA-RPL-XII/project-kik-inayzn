@@ -27,21 +27,23 @@ Route::middleware(['auth'])->group(function () {
 
     // Dashboard
     Route::get('/admin/dashboard', function () {
-        return Inertia::render('admin/dashboard');
+        return Inertia::render('admin/dashboard'); 
     })->name('admin.dashboard');
 
     Route::get('/user/dashboard', function () {
-        return Inertia::render('user/dashboard');
+        return Inertia::render('user/dashboard'); 
     })->name('user.dashboard');
 
-    // --- CRUD PRODUK (PERBAIKAN STRUKTUR) ---
-    // Pastikan urutan: Index -> Create -> Store -> Resource sisanya
+    // --- HALAMAN PRODUK UNTUK USER (SISI PEMBELI) ---
+    // DISESUAIKAN: Menggunakan 'user/product' (p kecil) sesuai folder kamu
+    Route::get('/products', function () {
+        return Inertia::render('user/product'); 
+    })->name('user.products');
+
+    // --- CRUD PRODUK (SISI ADMIN / DASHBOARD) ---
     Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
     Route::get('/produk/create', [ProdukController::class, 'create'])->name('produk.create');
     Route::post('/produk', [ProdukController::class, 'store'])->name('produk.store');
-    
-    // Resource untuk Edit, Update, Delete, Show
-    // Ini diletakkan di bawah agar /create tidak dianggap sebagai {id}
     Route::resource('produk', ProdukController::class)->except(['index', 'create', 'store']);
     
     // --- KATEGORI ---
@@ -50,10 +52,14 @@ Route::middleware(['auth'])->group(function () {
     
     // --- DATA USERS ---
     Route::get('/pengguna', [UserController::class, 'index'])->name('user.index');
+    Route::post('/pengguna', [UserController::class, 'store'])->name('user.store');
+    Route::put('/pengguna/{id}', [UserController::class, 'update'])->name('user.update');
     Route::delete('/pengguna/{id}', [UserController::class, 'destroy'])->name('user.destroy');
 
     // --- DATA ULASAN ---
     Route::get('/ulasan', [ReviewController::class, 'index'])->name('ulasan.index');
+    Route::get('/ulasan/create', [ReviewController::class, 'create'])->name('ulasan.create');
+    Route::post('/ulasan', [ReviewController::class, 'store'])->name('ulasan.store');
     Route::delete('/ulasan/{id}', [ReviewController::class, 'destroy'])->name('ulasan.destroy');
 
     // Logout

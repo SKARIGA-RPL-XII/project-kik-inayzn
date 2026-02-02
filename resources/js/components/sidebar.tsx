@@ -1,36 +1,45 @@
 import { Link, usePage, router } from '@inertiajs/react';
+import { 
+    LayoutDashboard, 
+    Home, 
+    Folders, 
+    Users, 
+    Star, 
+    LogOut 
+} from 'lucide-react';
 
 export default function Sidebar() {
-    // Fungsi untuk Logout dengan konfirmasi
     const handleLogout = () => {
         if (confirm('Apakah Anda yakin ingin keluar dari sistem?')) {
-            // Mengirim request POST ke rute logout di Laravel
             router.post('/logout');
         }
     };
 
     return (
         <aside className="w-64 border-r bg-white shadow-sm flex flex-col h-screen sticky top-0">
-            {/* Logo */}
+            {/* Logo Menggunakan File logo.png Kamu */}
             <div className="flex h-16 items-center px-6 border-b">
-                <div className="h-8 w-8 rounded-lg bg-[#1A4D2E] flex items-center justify-center mr-3">
-                    <span className="text-white font-bold text-xs">P</span>
+                <div className="flex items-center gap-3">
+                    <img 
+                        src="/images/logo.png" 
+                        alt="Logo PropertyKu" 
+                        className="h-10 w-auto object-contain" 
+                    />
+                    <span className="text-lg font-bold tracking-tight text-slate-800"></span>
                 </div>
-                <span className="text-lg font-bold tracking-tight text-slate-800">PropertyKu</span>
             </div>
 
             {/* Menu Section */}
             <nav className="flex-1 p-4 space-y-2 text-sm overflow-y-auto">
                 <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Main Menu</p>
                 
-                {/* Sesuaikan href dengan rute di web.php */}
-                <SidebarItem href="/admin/dashboard" label="Dashboard" icon="📊" />
-                <SidebarItem href="/produk" label="Produk" icon="🏠" />
-                <SidebarItem href="/kategori" label="Kategori" icon="📁" />
-                <SidebarItem href="/pengguna" label="Pengguna" icon="👥" />
+                <SidebarItem href="/admin/dashboard" label="Dashboard" icon={<LayoutDashboard size={18} />} />
+                <SidebarItem href="/produk" label="Properti" icon={<Home size={18} />} />
+                <SidebarItem href="/kategori" label="Kategori" icon={<Folders size={18} />} />
+                <SidebarItem href="/pengguna" label="Pengguna" icon={<Users size={18} />} />
                 
                 <p className="px-4 py-2 mt-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Reports</p>
-                <SidebarItem href="/ulasan" label="Ulasan" icon="⭐" />
+                <SidebarItem href="/ulasan" label="Ulasan" icon={<Star size={18} />} />
             </nav>
 
             {/* Footer Sidebar */}
@@ -39,7 +48,7 @@ export default function Sidebar() {
                     onClick={handleLogout}
                     className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-md transition duration-200 group"
                 >
-                    <span className="text-lg group-hover:scale-110 transition-transform">🚪</span> 
+                    <LogOut size={18} className="group-hover:translate-x-1 transition-transform" /> 
                     Logout
                 </button>
             </div>
@@ -54,11 +63,9 @@ function SidebarItem({
 }: {
     href: string;
     label: string;
-    icon?: string;
+    icon: React.ReactNode;
 }) {
     const { url } = usePage();
-    
-    // Logika isActive agar lebih akurat (juga menangani sub-halaman)
     const isActive = url === href || url.startsWith(href + '/');
 
     return (
@@ -72,7 +79,9 @@ function SidebarItem({
                 }
             `}
         >
-            <span className="text-lg">{icon}</span>
+            <span className={`${isActive ? 'text-white' : 'text-slate-400'} transition-colors`}>
+                {icon}
+            </span>
             {label}
         </Link>
     );

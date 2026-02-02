@@ -80,7 +80,7 @@ export default function EditProduk({ produk, categories }: EditProps) {
 
     return (
         <div className="flex min-h-screen bg-white">
-            <Head title="Edit Produk - Admin" />
+            <Head title="Edit Properti - Admin" />
             <Sidebar />
 
             <div className="flex-1 flex flex-col">
@@ -92,16 +92,16 @@ export default function EditProduk({ produk, categories }: EditProps) {
                         <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[100] animate-fade-in">
                             <div className="bg-[#1A4D2E] text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-3 border border-emerald-400">
                                 <CheckCircle2 size={18} />
-                                <span className="text-sm font-bold">Produk berhasil diperbarui!</span>
+                                <span className="text-sm font-bold">Propeti berhasil diperbarui!</span>
                             </div>
                         </div>
                     )}
 
                     <div className="max-w-5xl">
                         <div className="mb-8">
-                            <h2 className="text-xl font-bold text-slate-900">Edit Informasi Produk</h2>
+                            <h2 className="text-xl font-bold text-slate-900">Edit Informasi Properti</h2>
                             <p className="text-sm text-slate-500 border-b pb-4">
-                                Perbarui informasi mengenai produk <strong>{produk.nama_produk}</strong>.
+                                Perbarui informasi mengenai properti <strong>{produk.nama_produk}</strong>.
                             </p>
                         </div>
 
@@ -109,7 +109,7 @@ export default function EditProduk({ produk, categories }: EditProps) {
                             <div className="grid grid-cols-2 gap-x-12 gap-y-6">
                                 {/* Nama Produk */}
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-900">Nama Produk<span className="text-red-500">*</span></label>
+                                    <label className="text-sm font-bold text-slate-900">Nama Properti<span className="text-red-500">*</span></label>
                                     <input
                                         type="text"
                                         value={data.nama_produk}
@@ -119,7 +119,7 @@ export default function EditProduk({ produk, categories }: EditProps) {
                                     />
                                     {focusedField !== 'nama_produk' && (errors.nama_produk || (isErrorShake && !data.nama_produk)) && (
                                         <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in">
-                                            <AlertCircle size={12} /> Nama produk tidak boleh kosong
+                                            <AlertCircle size={12} /> Nama properti tidak boleh kosong
                                         </p>
                                     )}
                                 </div>
@@ -146,7 +146,7 @@ export default function EditProduk({ produk, categories }: EditProps) {
                                         className={`w-full p-3 rounded-lg border outline-none bg-white text-slate-900 font-bold ${ (focusedField !== 'kategori' && (errors.kategori || (isErrorShake && !data.kategori))) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                         onChange={e => setData('kategori', e.target.value)}
                                     >
-                                        <option value="">Pilih kategori produk</option>
+                                        <option value="">Pilih kategori properti</option>
                                         {categories && categories.map((cat) => (
                                             <option key={cat.id} value={cat.name}>
                                                 {cat.name}
@@ -192,7 +192,7 @@ export default function EditProduk({ produk, categories }: EditProps) {
                                     </div>
                                     {focusedField !== 'harga' && (errors.harga || (isErrorShake && !data.harga)) && (
                                         <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in mt-1">
-                                            <AlertCircle size={12} /> Harga produk wajib diisi
+                                            <AlertCircle size={12} /> Harga properti wajib diisi
                                         </p>
                                     )}
                                 </div>
@@ -217,7 +217,7 @@ export default function EditProduk({ produk, categories }: EditProps) {
 
                             {/* Unggah Gambar */}
                             <div className="space-y-4">
-                                <label className="text-sm font-bold text-slate-900">Media / Foto Produk</label>
+                                <label className="text-sm font-bold text-slate-900">Media / Foto Properti</label>
                                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                     <div className={`aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors relative overflow-hidden bg-white ${ (focusedField === 'gambar' || errors.gambar) ? 'border-red-500 bg-red-50' : 'border-slate-300' }`} >
                                         <input type="file" multiple accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" onFocus={() => setFocusedField('gambar')} onChange={handleFileChange} />
@@ -251,8 +251,9 @@ export default function EditProduk({ produk, categories }: EditProps) {
                                 <Link href="/produk" className="px-10 py-2.5 rounded-lg bg-slate-500 text-white hover:bg-slate-600 transition-colors font-bold text-sm shadow-sm">
                                     Batal
                                 </Link>
-                                <button type="submit" disabled={processing} className="px-10 py-2.5 rounded-lg bg-[#1A4D2E] text-white hover:bg-[#143524] transition-all font-bold text-sm shadow-md active:scale-95 disabled:opacity-50">
-                                    {processing ? 'Menyimpan...' : 'Perbarui Produk'}
+                                <button type="submit" disabled={processing} className="px-10 py-2.5 rounded-lg bg-[#1A4D2E] text-white hover:bg-[#143524] transition-all 
+                                font-bold text-sm shadow-md active:scale-95 disabled:opacity-50">
+                                    {processing ? 'Menyimpan...' : 'Perbarui Properti'}
                                 </button>
                             </div>
                         </form>
