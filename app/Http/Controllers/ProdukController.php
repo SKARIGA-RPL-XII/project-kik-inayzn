@@ -1,132 +1,43 @@
-<?php
-
-namespace App\Http\Controllers;
-
-use App\Models\Product;
-use App\Models\Category;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
-
-class ProdukController extends Controller
+public function index(Request $request)
 {
-    /**
-     * Menampilkan daftar produk dengan fitur pencarian
-     */
-    public function index(Request $request)
-    {
-        $products = Product::query()
-            // Logika pencarian: mencari berdasarkan nama_produk atau kategori
-            ->when($request->search, function ($query, $search) {
-                $query->where('nama_produk', 'like', "%{$search}%")
-                      ->orWhere('kategori', 'like', "%{$search}%");
-            })
-            ->latest()
-            ->paginate(10)
-            ->withQueryString(); // Menjaga parameter URL saat pindah halaman (pagination)
+    $query = Product::query();
 
-        return Inertia::render('admin/produk/index', [
-            'products' => $products,
-            'filters'  => $request->only(['search']) // Mengirim balik keyword pencarian ke React
-        ]);
+    // 1. Filter Pencarian (Nama Produk)
+    if ($request->filled('search')) {
+        $search = trim($request->search);
+        $query->where('nama_produk', 'like', "%{$search}%");
     }
 
-    /**
-     * Menampilkan form tambah produk
-     */
-    public function create()
-    {
-        $categories = Category::orderBy('name', 'asc')->get();
-
-        return Inertia::render('admin/produk/create', [
-            'categories' => $categories
-        ]); 
+    // 2. JANTUNG MASALAH: Filter Kategori
+    if ($request->filled('category') && $request->category !== 'Semua Kategori') {
+        $category = trim($request->category);
+        // Menggunakan LIKE % agar lebih fleksibel terhadap spasi atau case sensitivity
+        $query->where('kategori', 'LIKE', "%{$category}%");
     }
 
-    /**
-     * Menyimpan produk baru
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'nama_produk' => 'required|string|max:255',
-            'kategori'    => 'required|string',
-            'harga'       => 'required|numeric|min:0',
-            'stok'        => 'required|integer|min:0',
-            'status'      => 'required|in:aktif,nonaktif',
-            'deskripsi'   => 'required|string',
-            'gambar'      => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
-        ]);
+    // 3. Deteksi Rute Admin
+    $isAdminRoute = $request->is('admin/*') || $request->is('produk*') || $request->is('admin/produk*');
 
-        if ($request->hasFile('gambar')) {
-            $path = $request->file('gambar')->store('produk', 'public');
-            $validated['gambar'] = $path;
-        }
-
-        Product::create($validated);
-
-        return redirect('/produk')->with('success', 'Produk berhasil ditambahkan!');
+    if (!$isAdminRoute) {
+        $query->where('status', 'aktif');
     }
 
-    /**
-     * Menampilkan form edit produk
-     */
-    public function edit($id)
-    {
-        $produk = Product::findOrFail($id);
-        $categories = Category::orderBy('name', 'asc')->get();
+    // 4. Ambil Data (Wajib withQueryString agar pagination tidak hilang saat difilter)
+    $products = $query->latest()
+        ->paginate(12)
+        ->withQueryString();
 
-        return Inertia::render('admin/produk/edit', [ 
-            'produk' => $produk,
-            'categories' => $categories
-        ]);
-    }
+    // 5. Ambil Kategori untuk Dropdown
+    $categoriesList = \App\Models\Category::orderBy('name', 'asc')->pluck('name');
 
-    /**
-     * Memperbarui data produk
-     */
-    public function update(Request $request, $id)
-    {
-        $produk = Product::findOrFail($id);
+    $filters = [
+        'search' => $request->search ?? '',
+        'category' => $request->category ?? 'Semua Kategori'
+    ];
 
-        $validated = $request->validate([
-            'nama_produk' => 'required|string|max:255',
-            'kategori'    => 'required|string',
-            'harga'       => 'required|numeric|min:0',
-            'stok'        => 'required|integer|min:0',
-            'status'      => 'required|in:aktif,nonaktif',
-            'deskripsi'   => 'required|string',
-            'gambar'      => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
-        ]);
-
-        if ($request->hasFile('gambar')) {
-            if ($produk->gambar) {
-                Storage::disk('public')->delete($produk->gambar);
-            }
-            $path = $request->file('gambar')->store('produk', 'public');
-            $validated['gambar'] = $path;
-        } else {
-            unset($validated['gambar']);
-        }
-
-        $produk->update($validated);
-
-        return redirect('/produk')->with('success', 'Produk berhasil diperbarui!');
-    }
-
-    /**
-     * Menghapus produk
-     */
-    public function destroy($id)
-    {
-        $produk = Product::findOrFail($id);
-
-        if ($produk->gambar) {
-            Storage::disk('public')->delete($produk->gambar);
-        }
-
-        $produk->delete();
-
-        return redirect('/produk')->with('success', 'Produk berhasil dihapus!');
-    }
+    return Inertia::render($isAdminRoute ? 'admin/produk/index' : 'user/product', [
+        'products' => $products,
+        'categories' => $categoriesList,
+        'filters'  => $filters
+    ]);
 }

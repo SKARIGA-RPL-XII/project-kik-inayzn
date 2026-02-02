@@ -5,6 +5,7 @@ use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\KategoriController; 
 use App\Http\Controllers\ReviewController;
+use App\Models\Product; // <--- WAJIB TAMBAH INI
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -25,22 +26,51 @@ Route::middleware(['auth'])->group(function () {
             : redirect()->route('user.dashboard');
     })->name('home');
 
-    // Dashboard
+    // Dashboard Switcher
+    Route::get('/dashboard', function () {
+        return auth()->user()->role === 'admin' 
+            ? redirect()->route('admin.dashboard') 
+            : redirect()->route('user.dashboard');
+    });
+
+    // Dashboard Admin
     Route::get('/admin/dashboard', function () {
         return Inertia::render('admin/dashboard'); 
     })->name('admin.dashboard');
 
+    // Dashboard User (Home) - SEKARANG MEMBAWA DATA PRODUK
     Route::get('/user/dashboard', function () {
-        return Inertia::render('user/dashboard'); 
+        return Inertia::render('user/dashboard', [
+            'products' => Product::where('status', 'aktif')->latest()->take(6)->get()
+        ]); 
     })->name('user.dashboard');
 
-    // --- HALAMAN PRODUK UNTUK USER (SISI PEMBELI) ---
-    // DISESUAIKAN: Menggunakan 'user/product' (p kecil) sesuai folder kamu
+    // --- PROPERTI (Halaman List Semua Produk) ---
     Route::get('/products', function () {
-        return Inertia::render('user/product'); 
+        return Inertia::render('user/product', [
+            'products' => Product::where('status', 'aktif')->latest()->get()
+        ]); 
     })->name('user.products');
 
-    // --- CRUD PRODUK (SISI ADMIN / DASHBOARD) ---
+    // --- TERSIMPAN ---
+    Route::get('/saved-properties', function () {
+        return Inertia::render('user/simpan'); 
+    })->name('user.saved');
+
+    // --- SIMULATOR KPR ---
+    Route::get('/simulator-kpr', function () {
+        return Inertia::render('user/kpr'); 
+    })->name('user.kpr');
+
+    // --- PROFIL USER ---
+    Route::get('/profile', function () {
+        return Inertia::render('user/profil'); 
+    })->name('user.profile');
+
+    // --- FITUR GANTI FOTO PROFIL ---
+    Route::post('/profile/avatar', [UserController::class, 'updateAvatar'])->name('user.profile.avatar');
+
+    // --- CRUD PRODUK (ADMIN SIDE) ---
     Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
     Route::get('/produk/create', [ProdukController::class, 'create'])->name('produk.create');
     Route::post('/produk', [ProdukController::class, 'store'])->name('produk.store');

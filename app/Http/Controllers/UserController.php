@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage; // <--- WAJIB TAMBAH INI
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -12,13 +13,11 @@ class UserController extends Controller
     public function index()
     {
         return Inertia::render('admin/pengguna/index', [
-            // Ambil semua admin tanpa pagination agar selalu di atas
             'admins' => User::where('role', 'admin')
                 ->select('id', 'username', 'email', 'role')
                 ->latest()
                 ->get(),
             
-            // Ambil user biasa dengan pagination
             'users' => User::where('role', 'user')
                 ->select('id', 'username', 'email', 'role')
                 ->latest()
@@ -27,8 +26,34 @@ class UserController extends Controller
     }
 
     /**
-     * Update data pengguna (untuk Modal Edit)
+     * Update Foto Profil (Fungsi yang tadi hilang)
      */
+    public function updateAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $user = auth()->user();
+
+        // Hapus foto lama jika ada di folder storage
+        if ($user->avatar) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
+        // Upload foto baru ke folder 'avatars'
+        if ($request->hasFile('avatar')) {
+            $path = $request->file('avatar')->store('avatars', 'public');
+            
+            // Update kolom avatar di database
+            $user->update([
+                'avatar' => $path
+            ]);
+        }
+
+        return redirect()->back()->with('message', 'Foto profil berhasil diperbarui!');
+    }
+
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -36,7 +61,7 @@ class UserController extends Controller
         $request->validate([
             'username' => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|min:8|confirmed', // nullable supaya kalau password kosong tidak ganti
+            'password' => 'nullable|min:8|confirmed',
         ]);
 
         $user->username = $request->username;
@@ -63,7 +88,7 @@ class UserController extends Controller
             'username' => $request->username,
             'email'    => $request->email,
             'password' => Hash::make($request->password),
-            'role'     => 'admin', // Sesuaikan jika ingin nambah admin via modal
+            'role'     => 'admin', 
         ]);
 
         return redirect()->back()->with('message', 'Pengguna berhasil ditambahkan!');
@@ -72,6 +97,12 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
+        
+        // Opsional: Hapus juga foto profilnya saat user dihapus
+        if ($user->avatar) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
         $user->delete();
 
         return redirect()->back()->with('message', 'Pengguna berhasil dihapus!');
