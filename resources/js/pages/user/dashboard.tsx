@@ -120,8 +120,8 @@ export default function UserDashboard() {
                 ))}
             </div>
 
-            {/* PROPERTY LIST SECTION */}
-            <div className="max-w-7xl mx-auto px-8 py-20">
+  {/* PROPERTY LIST SECTION */}
+  <div className="max-w-7xl mx-auto px-8 py-20">
                 <div className="flex items-end justify-between mb-10">
                     <div className="space-y-2">
                         <div className="inline-block bg-emerald-100 text-emerald-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Rekomendasi</div>
@@ -136,8 +136,7 @@ export default function UserDashboard() {
                     {dataProduk.length > 0 ? (
                         dataProduk.map((product: any) => (
                             <Link 
-                                /* REDIRECT KE HALAMAN PRODUK DENGAN FILTER KATEGORI */
-                                href={`/products?search=${product.kategori}`} 
+                                href={`/products/${product.id}`} 
                                 key={product.id} 
                                 className="group bg-white rounded-[1.5rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
                             >
@@ -147,17 +146,26 @@ export default function UserDashboard() {
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
                                         alt={product.nama_produk} 
                                     />
-                                    {/* Tombol Bookmark dengan e.preventDefault agar tidak memicu Link Card */}
+                                    
                                     <button 
-                                        onClick={(e) => { e.preventDefault(); alert('Tersimpan!'); }}
+                                        onClick={(e) => { 
+                                            e.preventDefault(); 
+                                            if (!auth.user) {
+                                                router.get('/login');
+                                            } else {
+                                                alert('Properti disimpan ke favorit!'); 
+                                            }
+                                        }}
                                         className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-md rounded-lg text-[#1a432d] shadow-md hover:bg-[#1a432d] hover:text-white transition-all z-10"
                                     >
                                         <Bookmark size={16} />
                                     </button>
+
                                     <div className="absolute bottom-4 left-4 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-md tracking-tighter uppercase z-10">
                                         {product.kategori}
                                     </div>
                                 </div>
+
                                 <div className="p-6 flex flex-col flex-grow">
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
@@ -173,10 +181,18 @@ export default function UserDashboard() {
                                             <ArrowRight size={20} />
                                         </div>
                                     </div>
+
                                     <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
-                                        <span className="text-emerald-700 font-black text-lg">
-                                            {formatIDR(product.harga)}
-                                        </span>
+                                        <div className="flex flex-col">
+                                            <span className="text-emerald-700 font-black text-lg">
+                                                {formatIDR(product.harga)}
+                                            </span>
+                                            {!auth.user && (
+                                                <span className="text-[9px] text-emerald-600 font-bold italic mt-1">
+                                                    * Login untuk lihat detail
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="flex flex-col items-end">
                                             <span className="text-slate-400 text-[8px] uppercase font-bold">Stok</span>
                                             <span className="text-slate-600 text-xs font-black">{product.stok} unit</span>
@@ -195,8 +211,15 @@ export default function UserDashboard() {
 
             {/* FOOTER */}
             <footer className="bg-slate-900 py-12 text-center">
-                <img src="/images/logo.png" alt="Logo" className="h-8 w-auto mx-auto mb-4 brightness-0 invert opacity-50" />
-                <p className="text-slate-600 text-[9px] font-bold uppercase tracking-[0.2em]">&copy; 2026 All rights reserved.</p>
+                <div className="max-w-7xl mx-auto px-8">
+                    <img src="/images/logo.png" alt="Logo" className="h-8 w-auto mx-auto mb-4 brightness-0 invert opacity-50" />
+                    <div className="flex justify-center gap-6 mb-6">
+                        <Link href="/products" className="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Properti</Link>
+                        <Link href="/simulator-kpr" className="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">KPR</Link>
+                        <Link href="/login" className="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Login</Link>
+                    </div>
+                    <p className="text-slate-600 text-[9px] font-bold uppercase tracking-[0.2em]">&copy; 2026 PropertyKu. All rights reserved.</p>
+                </div>
             </footer>
         </div>
     );

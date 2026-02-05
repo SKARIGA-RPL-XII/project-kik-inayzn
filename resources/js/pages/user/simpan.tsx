@@ -57,7 +57,7 @@ export default function SavedProperties() {
                 <div className="flex gap-8 items-center">
                     <Link href="/" className="flex items-center gap-2 group">
                         <img src="/images/logo.png" alt="Logo" className="h-8 w-auto object-contain brightness-0 invert" />
-                        <span className="font-black text-xl tracking-tighter">PropertyKu</span>
+                        <span className="font-black text-xl tracking-tighter"></span>
                     </Link>
 
                     <div className="hidden lg:flex items-center gap-6 ml-4 border-l border-emerald-800 pl-8">

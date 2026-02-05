@@ -5,11 +5,45 @@ use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\KategoriController; 
 use App\Http\Controllers\ReviewController;
-use App\Models\Product; // <--- WAJIB TAMBAH INI
+use App\Models\Product;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// --- GUEST: LOGIN & REGISTER ---
+
+/*
+|--------------------------------------------------------------------------
+| Public Routes (Bisa diakses Tanpa Login)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/', function () {
+    return redirect()->route('user.dashboard');
+})->name('home');
+
+// Dashboard User - Anonim bisa masuk
+Route::get('/user/dashboard', function () {
+    return Inertia::render('user/dashboard', [
+        'products' => Product::where('status', 'aktif')->latest()->take(6)->get(),
+        'auth' => [
+            'user' => auth()->user()
+        ]
+    ]); 
+})->name('user.dashboard');
+
+// Katalog Produk - Anonim bisa melihat list
+Route::get('/products', [ProdukController::class, 'index'])->name('user.products');
+
+// Simulator KPR - Biasanya dibiarkan publik agar menarik user
+Route::get('/simulator-kpr', function () {
+    return Inertia::render('user/kpr'); 
+})->name('user.kpr');
+
+
+/*
+|--------------------------------------------------------------------------
+| Guest Routes (Hanya untuk user yang BELUM login)
+|--------------------------------------------------------------------------
+*/
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
@@ -17,60 +51,40 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'storeRegister']);
 });
 
-// --- AUTH: PROTECTED ROUTES ---
+
+/*
+|--------------------------------------------------------------------------
+| Authenticated Routes (WAJIB Login)
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth'])->group(function () {
     
-    Route::get('/', function () {
-        return auth()->user()->role === 'admin' 
-            ? redirect()->route('admin.dashboard') 
-            : redirect()->route('user.dashboard');
-    })->name('home');
+    // DETAIL PRODUK - Sesuai request: Harus login dulu
+    Route::get('/products/{id}', [ProdukController::class, 'show'])->name('user.products.detail');
 
-    // Dashboard Switcher
+    // Dashboard Switcher & Admin
     Route::get('/dashboard', function () {
         return auth()->user()->role === 'admin' 
             ? redirect()->route('admin.dashboard') 
             : redirect()->route('user.dashboard');
     });
 
-    // Dashboard Admin
     Route::get('/admin/dashboard', function () {
         return Inertia::render('admin/dashboard'); 
     })->name('admin.dashboard');
 
-    // Dashboard User (Home) - SEKARANG MEMBAWA DATA PRODUK
-    Route::get('/user/dashboard', function () {
-        return Inertia::render('user/dashboard', [
-            'products' => Product::where('status', 'aktif')->latest()->take(6)->get()
-        ]); 
-    })->name('user.dashboard');
-
-    // --- PROPERTI (Halaman List Semua Produk) ---
-    Route::get('/products', function () {
-        return Inertia::render('user/product', [
-            'products' => Product::where('status', 'aktif')->latest()->get()
-        ]); 
-    })->name('user.products');
-
-    // --- TERSIMPAN ---
+    // Fitur User Terproteksi
     Route::get('/saved-properties', function () {
         return Inertia::render('user/simpan'); 
     })->name('user.saved');
 
-    // --- SIMULATOR KPR ---
-    Route::get('/simulator-kpr', function () {
-        return Inertia::render('user/kpr'); 
-    })->name('user.kpr');
-
-    // --- PROFIL USER ---
     Route::get('/profile', function () {
         return Inertia::render('user/profil'); 
     })->name('user.profile');
 
-    // --- FITUR GANTI FOTO PROFIL ---
     Route::post('/profile/avatar', [UserController::class, 'updateAvatar'])->name('user.profile.avatar');
 
-    // --- CRUD PRODUK (ADMIN SIDE) ---
+    // --- CRUD PRODUK (ADMIN) ---
     Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
     Route::get('/produk/create', [ProdukController::class, 'create'])->name('produk.create');
     Route::post('/produk', [ProdukController::class, 'store'])->name('produk.store');
@@ -92,7 +106,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/ulasan', [ReviewController::class, 'store'])->name('ulasan.store');
     Route::delete('/ulasan/{id}', [ReviewController::class, 'destroy'])->name('ulasan.destroy');
 
-    // Logout
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 

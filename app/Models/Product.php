@@ -2,14 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
-    use HasFactory;
-
-    protected $table = 'produks'; // Sesuai nama di migration
+    protected $table = 'produks'; // ✅ karena nama tabel tidak default
 
     protected $fillable = [
         'nama_produk',
@@ -18,6 +15,6 @@ class Product extends Model
         'stok',
         'status',
         'deskripsi',
-        'gambar',
+        'gambar'
     ];
 }

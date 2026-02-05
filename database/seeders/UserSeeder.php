@@ -4,25 +4,24 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder 
-{ // <--- KURUNG INI TADI HILANG, MAKANYA ERROR!
+{
     public function run(): void
     {
-        // 1. Akun Admin
+        // 1. Akun Admin (Hardcoded)
         User::create([
             'username' => 'admin_toko',
             'email'    => 'admin@gmail.com',
-            'password' => 'password123', // Akan di-hash otomatis oleh Model User
+            'password' => '123', // Pastikan di Model User sudah ada cast 'hashed'
             'role'     => 'admin',
         ]);
 
-        // 2. Akun User Biasa
+        // 2. Akun User Biasa (Hardcoded)
         User::create([
             'username' => 'budi_pelanggan',
             'email'    => 'budi@gmail.com',
-            'password' => 'password123', // Akan di-hash otomatis oleh Model User
+            'password' => 'password123', 
             'role'     => 'user',
         ]);
     }
