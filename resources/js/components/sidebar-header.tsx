@@ -8,7 +8,7 @@ export default function SidebarHeader({
     breadcrumbs,
 }: SidebarHeaderProps) {
     return (
-        <header className="flex h-16 items-center justify-between border-b bg-white px-6 shadow-sm">
+        <header className="flex h-16 items-center justify-between  bg-white px-6 shadow-sm">
             {/* KIRI: Breadcrumb */}
             <div className="flex items-center gap-2 text-sm">
                 {breadcrumbs?.map((item, index) => (

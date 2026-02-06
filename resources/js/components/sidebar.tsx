@@ -9,27 +9,32 @@ import {
 } from 'lucide-react';
 
 export default function Sidebar() {
+    // Fungsi logout yang disesuaikan
     const handleLogout = () => {
         if (confirm('Apakah Anda yakin ingin keluar dari sistem?')) {
-            router.post('/logout');
+            router.post('/logout', {}, {
+                // Menghapus history browser agar tidak bisa di-back
+                replace: true, 
+                onSuccess: () => {
+                    // Paksa reload total ke halaman login untuk membersihkan state
+                    window.location.href = '/login';
+                }
+            });
         }
     };
 
     return (
-        <aside className="w-64 border-r bg-white shadow-sm flex flex-col h-screen sticky top-0">
-            {/* Logo Menggunakan File logo.png Kamu */}
-            <div className="flex h-16 items-center px-6 border-b">
+        <aside className="w-64  bg-white shadow-sm flex flex-col h-screen sticky top-0">
+            <div className="flex h-16 items-center px-6 ">
                 <div className="flex items-center gap-3">
                     <img 
                         src="/images/logo.png" 
                         alt="Logo PropertyKu" 
                         className="h-10 w-auto object-contain" 
                     />
-                    <span className="text-lg font-bold tracking-tight text-slate-800"></span>
                 </div>
             </div>
 
-            {/* Menu Section */}
             <nav className="flex-1 p-4 space-y-2 text-sm overflow-y-auto">
                 <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Main Menu</p>
                 
@@ -42,8 +47,7 @@ export default function Sidebar() {
                 <SidebarItem href="/ulasan" label="Ulasan" icon={<Star size={18} />} />
             </nav>
 
-            {/* Footer Sidebar */}
-            <div className="p-4 border-t">
+            <div className="p-4">
                 <button 
                     onClick={handleLogout}
                     className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-md transition duration-200 group"

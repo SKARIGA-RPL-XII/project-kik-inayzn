@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import { 
     Calculator, 
@@ -11,7 +11,8 @@ import {
     CircleDollarSign,
     Calendar,
     Percent,
-    Wallet
+    Wallet,
+    Lock // Tambahkan ini
 } from 'lucide-react';
 
 const WHATSAPP_NUMBER = "6287840375227"; 
@@ -25,10 +26,18 @@ export default function KPRSimulator() {
     const [tenure, setTenure] = useState<number>(10);
     const [interestRate, setInterestRate] = useState<number>(5);
     const [monthlyInstallment, setMonthlyInstallment] = useState<number>(0);
+    
+    // State Modal
+    const [showAuthModal, setShowAuthModal] = useState(false);
 
     const handleLogout = () => {
         if (confirm('Apakah Anda yakin ingin keluar dari PropertyKu?')) {
-            router.post('/logout');
+            router.post('/logout', {}, {
+                replace: true,
+                onSuccess: () => {
+                    window.location.href = '/login';
+                }
+            });
         }
     };
 
@@ -55,7 +64,13 @@ export default function KPRSimulator() {
     };
 
     const handleWhatsAppContact = () => {
-        const userName = auth.user ? (auth.user.username || auth.user.name) : "Calon Pembeli";
+        // Cek Login: Jika belum login, tampilkan modal estetik
+        if (!auth.user) {
+            setShowAuthModal(true);
+            return;
+        }
+
+        const userName = auth.user.username || auth.user.name;
         const message = `Halo PropertyKu, saya ${userName} ingin konsultasi mengenai KPR.%0A%0A` +
                         `*Detail Rencana KPR:*%0A` +
                         `- Harga Properti: ${formatRupiah(propertyPrice)}%0A` +
@@ -72,7 +87,7 @@ export default function KPRSimulator() {
         <div className="min-h-screen bg-[#f8fafc] font-sans overflow-x-hidden">
             <Head title="Simulator KPR - PropertyKu" />
 
-            {/* NAVBAR - SEKARANG SAMA DENGAN DASHBOARD */}
+            {/* NAVBAR */}
             <nav className="bg-[#1a432d] px-8 py-4 flex items-center justify-between text-white sticky top-0 z-50 shadow-md">
                 <div className="flex gap-8 items-center">
                     <Link href="/" className="flex items-center gap-2 group">
@@ -115,7 +130,7 @@ export default function KPRSimulator() {
                     ) : (
                         <div className="flex gap-6 items-center">
                             <Link href="/login" className="font-bold text-sm hover:text-emerald-200">Login</Link>
-                            <Link href="/register" className="font-bold text-sm bg-emerald-500 px-4 py-2 rounded-xl hover:bg-emerald-400">Register</Link>
+                            <Link href="/register" className="font-bold text-sm bg-emerald-500 px-4 py-2 rounded-xl hover:bg-emerald-400 transition-colors">Register</Link>
                         </div>
                     )}
                 </div>
@@ -129,7 +144,6 @@ export default function KPRSimulator() {
                 </p>
             </div>
 
-            {/* MAIN CONTENT */}
             <main className="max-w-6xl mx-auto px-8 -mt-20 pb-20">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     
@@ -144,7 +158,7 @@ export default function KPRSimulator() {
                                     type="number" 
                                     placeholder="Contoh: 1000000000"
                                     onChange={(e) => setPropertyPrice(Number(e.target.value))}
-                                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 font-bold text-slate-700 outline-none"
+                                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 font-bold text-slate-700 outline-none transition-all"
                                 />
                             </div>
 
@@ -156,7 +170,7 @@ export default function KPRSimulator() {
                                     type="number" 
                                     placeholder="Contoh: 200000000"
                                     onChange={(e) => setDownPayment(Number(e.target.value))}
-                                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 font-bold text-slate-700 outline-none"
+                                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 font-bold text-slate-700 outline-none transition-all"
                                 />
                             </div>
 
@@ -182,7 +196,7 @@ export default function KPRSimulator() {
                                 <input 
                                     type="number" step="0.1" value={interestRate}
                                     onChange={(e) => setInterestRate(Number(e.target.value))}
-                                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 font-bold text-slate-700 outline-none"
+                                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 font-bold text-slate-700 outline-none transition-all"
                                 />
                             </div>
                         </div>
@@ -196,14 +210,14 @@ export default function KPRSimulator() {
                     </div>
 
                     {/* HASIL PERHITUNGAN */}
-                    <div className="bg-[#1a432d] rounded-[2.5rem] p-10 text-white flex flex-col justify-between shadow-2xl relative overflow-hidden">
+                    <div className="bg-[#1a432d] rounded-[2.5rem] p-10 text-white flex flex-col justify-between shadow-2xl relative overflow-hidden min-h-[400px]">
                         <div className="absolute top-0 right-0 p-8 opacity-10">
                             <Calculator size={120} />
                         </div>
                         
                         <div className="relative z-10">
                             <p className="text-emerald-300/60 text-xs font-black uppercase tracking-[0.2em] mb-2">Estimasi Cicilan</p>
-                            <h2 className="text-4xl font-black mb-1">{formatRupiah(monthlyInstallment)}</h2>
+                            <h2 className="text-4xl font-black mb-1 text-emerald-400">{formatRupiah(monthlyInstallment)}</h2>
                             <p className="text-emerald-100/50 text-sm font-medium">per bulan*</p>
                         </div>
 
@@ -219,21 +233,38 @@ export default function KPRSimulator() {
                             
                             <button 
                                 onClick={handleWhatsAppContact}
-                                className="w-full bg-white/10 hover:bg-white/20 backdrop-blur-md py-4 rounded-xl font-bold text-sm transition-all border border-white/10 flex items-center justify-center gap-2 cursor-pointer"
+                                className="w-full bg-emerald-500 hover:bg-emerald-400 py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-black/20"
                             >
-                                Hubungi Konsultan <ArrowRight size={16} />
+                                {auth.user ? 'Hubungi Konsultan' : 'Login untuk Konsultasi'} <ArrowRight size={16} />
                             </button>
                         </div>
                     </div>
-
-                </div>
-
-                <div className="mt-12 bg-white/50 border border-slate-100 p-6 rounded-2xl">
-                    <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
-                        *Disclaimer: Hasil perhitungan ini adalah estimasi awal dan tidak bersifat mengikat. Suku bunga dapat berubah sewaktu-waktu sesuai kebijakan bank penyedia KPR.
-                    </p>
                 </div>
             </main>
+
+            {/* MODAL PERINGATAN AUTH */}
+            {showAuthModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#1a432d]/60 backdrop-blur-md animate-in fade-in" onClick={() => setShowAuthModal(false)} />
+                    <div className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in slide-in-from-bottom-8 duration-300 text-center overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -mr-16 -mt-16" />
+                        <div className="relative z-10">
+                            <div className="w-20 h-20 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6 rotate-3">
+                                <Lock size={40} className="text-emerald-600 -rotate-3" />
+                            </div>
+                            <h3 className="text-2xl font-black text-[#1a432d] mb-3">Satu Langkah Lagi!</h3>
+                            <p className="text-slate-500 text-sm mb-8 px-4">
+                                Bergabunglah dengan <span className="text-emerald-600 font-bold">PropertyKu</span> untuk melakukan simulasi mendalam dan konsultasi KPR gratis.
+                            </p>
+                            <div className="grid grid-cols-1 gap-3">
+                                <Link href="/login" className="bg-[#1a432d] text-white text-center font-bold py-4 rounded-2xl hover:bg-emerald-800 transition-all shadow-lg active:scale-95">Masuk Sekarang</Link>
+                                <Link href="/register" className="bg-emerald-500 text-white text-center font-bold py-4 rounded-2xl hover:bg-emerald-400 transition-all shadow-lg active:scale-95">Daftar Akun Baru</Link>
+                                <button onClick={() => setShowAuthModal(false)} className="mt-2 text-slate-400 text-[10px] font-black uppercase tracking-widest bg-transparent border-none cursor-pointer">Tutup</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

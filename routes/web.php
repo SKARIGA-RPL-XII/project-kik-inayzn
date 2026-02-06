@@ -9,7 +9,6 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-
 /*
 |--------------------------------------------------------------------------
 | Public Routes (Bisa diakses Tanpa Login)
@@ -19,6 +18,20 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return redirect()->route('user.dashboard');
 })->name('home');
+
+/**
+ * 1. PINDAHKAN INI KE LUAR GRUP AUTH
+ * Ini adalah "pintu masuk" dashboard. 
+ * Kalau sudah login, dia cek role. Kalau belum login, langsung lempar ke user dashboard.
+ */
+Route::get('/dashboard', function () {
+    if (auth()->check()) {
+        return auth()->user()->role === 'admin' 
+            ? redirect()->route('admin.dashboard') 
+            : redirect()->route('user.dashboard');
+    }
+    return redirect()->route('user.dashboard');
+})->name('dashboard.index');
 
 // Dashboard User - Anonim bisa masuk
 Route::get('/user/dashboard', function () {
@@ -33,7 +46,7 @@ Route::get('/user/dashboard', function () {
 // Katalog Produk - Anonim bisa melihat list
 Route::get('/products', [ProdukController::class, 'index'])->name('user.products');
 
-// Simulator KPR - Biasanya dibiarkan publik agar menarik user
+// Simulator KPR
 Route::get('/simulator-kpr', function () {
     return Inertia::render('user/kpr'); 
 })->name('user.kpr');
@@ -62,13 +75,7 @@ Route::middleware(['auth'])->group(function () {
     // DETAIL PRODUK - Sesuai request: Harus login dulu
     Route::get('/products/{id}', [ProdukController::class, 'show'])->name('user.products.detail');
 
-    // Dashboard Switcher & Admin
-    Route::get('/dashboard', function () {
-        return auth()->user()->role === 'admin' 
-            ? redirect()->route('admin.dashboard') 
-            : redirect()->route('user.dashboard');
-    });
-
+    // Route Admin Dashboard tetap diproteksi
     Route::get('/admin/dashboard', function () {
         return Inertia::render('admin/dashboard'); 
     })->name('admin.dashboard');

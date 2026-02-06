@@ -2,7 +2,6 @@ import { useForm, Link } from '@inertiajs/react';
 import React, { useState, useEffect } from 'react';
 
 export default function Login() {
-    // 1. Inisialisasi field 'email' agar sesuai dengan AuthController
     const { data, setData, post, processing, errors } = useForm({
         email: '', 
         password: '',
@@ -37,7 +36,6 @@ export default function Login() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Mengirim data ke route /login yang ada di AuthController
         post('/login');
     };
 
@@ -46,7 +44,6 @@ export default function Login() {
             {/* Sisi Kiri: Form Section */}
             <div className="flex-[3] flex flex-col p-6 md:p-12 relative">
                 <div className="mb-8 self-start">
-                    {/* Pastikan file gambar ini ada di public/images/logo.png */}
                     <img src="/images/logo.png" alt="Logo" className="h-14 w-auto object-contain" />
                 </div>
 
@@ -61,24 +58,29 @@ export default function Login() {
                                 <div className="space-y-4">
                                     {/* INPUT EMAIL */}
                                     <div>
+                                        {/* Tambah label agar teks tujuan kolom kelihatan jelas */}
+                                        <label className="block text-gray-700 font-bold mb-2 ml-1">Email Address</label>
                                         <input
                                             type="email"
                                             placeholder="Masukkan Email"
-                                            className="w-full px-5 py-4 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#6B8E6B] outline-none text-lg font-medium transition-all"
+                                            /* Pertegas border ke gray-400 agar garis kotak langsung terlihat */
+                                            className="w-full px-5 py-4 bg-white border-2 border-gray-400 rounded-xl focus:ring-2 focus:ring-[#6B8E6B] outline-none text-lg font-medium transition-all placeholder:text-gray-400"
                                             value={data.email}
                                             onChange={e => setData('email', e.target.value)}
                                             required
                                         />
-                                        {/* Menampilkan error email dari controller */}
                                         {errors.email && <p className="text-red-500 text-sm mt-1 font-medium">{errors.email}</p>}
                                     </div>
 
                                     {/* INPUT PASSWORD */}
                                     <div>
+                                        {/* Tambah label agar teks tujuan kolom kelihatan jelas */}
+                                        <label className="block text-gray-700 font-bold mb-2 ml-1">Password</label>
                                         <input
                                             type="password"
                                             placeholder="Masukkan Password"
-                                            className="w-full px-5 py-4 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#6B8E6B] outline-none text-lg font-medium transition-all"
+                                            /* Pertegas border ke gray-400 agar garis kotak langsung terlihat */
+                                            className="w-full px-5 py-4 bg-white border-2 border-gray-400 rounded-xl focus:ring-2 focus:ring-[#6B8E6B] outline-none text-lg font-medium transition-all placeholder:text-gray-400"
                                             value={data.password}
                                             onChange={e => setData('password', e.target.value)}
                                             required
@@ -109,7 +111,7 @@ export default function Login() {
                 </div>
             </div>
 
-            {/* Sisi Kanan: Slider Kalimat Otomatis (Tanpa Kata Property) */}
+            {/* Sisi Kanan: Slider Tetap Sama */}
             <div className="hidden lg:flex flex-1 bg-[#1B331B] items-center justify-center p-12 relative overflow-hidden text-white">
                 <div className="absolute top-0 right-0 w-full h-full opacity-10">
                     <div className="absolute top-10 right-10 w-64 h-64 bg-white rounded-full blur-[100px]"></div>

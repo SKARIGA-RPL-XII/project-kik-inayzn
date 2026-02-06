@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Review;
+use App\Models\Ulasan; 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ReviewController extends Controller
 {
+    /**
+     * Dashboard Admin: Menampilkan daftar ulasan
+     */
     public function index(): Response
     {
-        // Tampilkan ulasan beserta balasan adminnya jika ada
-        $reviews = Review::with(['user:id,username', 'product:id,name'])
+        $reviews = Ulasan::with(['user:id,username', 'product:id,nama_produk'])
             ->latest()
             ->paginate(8);
 
@@ -21,38 +24,66 @@ class ReviewController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create()
     {
-        // Ambil ulasan yang BELUM memiliki balasan admin agar bisa dipilih
-        $pendingReviews = Review::with(['user:id,username', 'product:id,name'])
-            ->whereNull('admin_reply') 
-            ->get();
-
-        return Inertia::render('admin/ulasan/create', [
-            'pendingReviews' => $pendingReviews
-        ]);
+        return redirect()->back();
     }
 
+    /**
+     * Simpan ulasan baru (dari User) atau Balasan (dari Admin)
+     */
     public function store(Request $request)
     {
+        // 1. Logika untuk USER kirim ulasan
+        if ($request->has('produk_id')) {
+            $validated = $request->validate([
+                'produk_id'  => 'required|exists:products,id', 
+                'isi_ulasan' => 'required|string|min:3',
+                'rating'     => 'required|integer|min:1|max:5',
+            ]);
+
+            Ulasan::create([
+                'produk_id'  => $validated['produk_id'],
+                'user_id'    => Auth::id(),
+                'isi_ulasan' => $validated['isi_ulasan'],
+                'rating'     => $validated['rating'],
+                'is_read'    => true, // User baru kirim, set true karena admin belum balas
+            ]);
+
+            return redirect()->back()->with('success', 'Ulasan berhasil dikirim!');
+        }
+
+        // 2. Logika untuk ADMIN membalas ulasan
         $validated = $request->validate([
-            'review_id' => 'required|exists:reviews,id',
+            'review_id'   => 'required|exists:ulasans,id',
             'admin_reply' => 'required|string|min:3',
         ]);
 
-        // Kita cari ulasannya, lalu kita update kolom balasan adminnya
-        $review = Review::findOrFail($validated['review_id']);
+        $review = Ulasan::findOrFail($validated['review_id']);
+        
+        // UPDATE: Tambahkan is_read = false supaya muncul notif di sisi User
         $review->update([
             'admin_reply' => $validated['admin_reply'],
-            // 'replied_at' => now(), // Tambahkan ini jika kamu punya kolom timestamp balasan
+            'is_read'     => false, 
         ]);
 
-        return redirect()->route('ulasan.index')->with('success', 'Balasan ulasan berhasil dikirim!');
+        return redirect()->back()->with('success', 'Balasan ulasan berhasil dikirim!');
+    }
+
+    /**
+     * Method baru buat User "mematikan" notif (klik ulasan)
+     */
+    public function markAsRead($id)
+    {
+        $review = Ulasan::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
+        $review->update(['is_read' => true]);
+
+        return redirect()->back();
     }
 
     public function destroy(int $id)
     {
-        Review::findOrFail($id)->delete();
+        Ulasan::findOrFail($id)->delete();
         return redirect()->back()->with('success', 'Ulasan berhasil dihapus');
     }
 }

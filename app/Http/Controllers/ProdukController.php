@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product; 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class ProdukController extends Controller
@@ -13,20 +14,17 @@ class ProdukController extends Controller
     {
         $query = Product::query();
 
-        // 1. Filter Pencarian
         if ($request->filled('search')) {
             $search = trim($request->search);
             $query->where('nama_produk', 'like', "%{$search}%");
         }
 
-        // 2. Filter Kategori
         if ($request->filled('category') && $request->category !== 'Semua Kategori') {
             $category = trim($request->category);
             $query->where('kategori', $category);
         }
 
-        // 3. Cek apakah Admin (berdasarkan prefix URL /produk)
-        $isAdminRoute = $request->is('produk*');
+        $isAdminRoute = $request->is('produk*') || $request->is('admin*');
 
         if (!$isAdminRoute) {
             $query->where('status', 'aktif');
@@ -36,7 +34,15 @@ class ProdukController extends Controller
             ->paginate($isAdminRoute ? 10 : 12)
             ->withQueryString();
 
-        $categoriesList = Category::orderBy('nama_kategori', 'asc')->pluck('nama_kategori');
+        // ✅ Tambahkan URL gambar ke setiap produk di list
+        $products->getCollection()->transform(function ($product) {
+            $product->gambar_url = $product->gambar ? asset('storage/' . $product->gambar) : null;
+            return $product;
+        });
+
+        $categoriesList = Category::all()->map(function($cat) {
+            return $cat->nama_kategori ?? $cat->name;
+        })->filter()->values();
 
         $filters = [
             'search' => $request->search ?? '',
@@ -50,15 +56,34 @@ class ProdukController extends Controller
         ]);
     }
 
-    // Tampilkan Form Tambah (Hanya Admin)
-    public function create()
+    /**
+     * ✅ UPDATE: Method Show sekarang membawa relasi ulasan & user
+     */
+    public function show($id)
     {
-        return Inertia::render('admin/produk/create', [
-            'categories' => Category::orderBy('nama_kategori', 'asc')->get()
+        // Ambil produk dengan relasi ulasans dan user di dalam ulasan tersebut
+        $product = Product::with(['ulasans.user'])->findOrFail($id);
+
+        // Tambahkan attribute gambar_url secara manual sebelum dikirim ke FE
+        $product->gambar_url = $product->gambar ? asset('storage/' . $product->gambar) : null;
+
+        return Inertia::render('user/product_detail', [
+            'product' => $product
         ]);
     }
 
-    // Simpan Produk (Hanya Admin)
+    public function create()
+    {
+        return Inertia::render('admin/produk/create', [
+            'categories' => Category::all()->map(function($cat) {
+                return [
+                    'id' => $cat->id,
+                    'name' => $cat->nama_kategori ?? $cat->name
+                ];
+            })
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -68,20 +93,75 @@ class ProdukController extends Controller
             'stok'        => 'required|integer',
             'deskripsi'   => 'nullable|string',
             'status'      => 'required|in:aktif,nonaktif',
+            'gambar'      => 'required|array|min:1',
+            'gambar.*'    => 'image|mimes:jpg,jpeg,png|max:2048'
         ]);
+
+        if ($request->hasFile('gambar')) {
+            $validated['gambar'] = $request->file('gambar')[0]->store('produk', 'public');
+        }
 
         Product::create($validated);
 
         return redirect()->route('produk.index')->with('success', 'Produk berhasil dibuat!');
     }
 
-    // Detail Produk (Wajib Login - diatur di web.php)
-    public function show($id)
+    public function edit($id)
+    {
+        $produk = Product::findOrFail($id);
+        
+        $categories = Category::all()->map(function($cat) {
+            return [
+                'id' => $cat->id,
+                'name' => $cat->nama_kategori ?? $cat->name
+            ];
+        });
+
+        return Inertia::render('admin/produk/edit', [
+            'produk' => $produk,
+            'categories' => $categories
+        ]);
+    }
+
+    public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
 
-        return Inertia::render('user/product_detail', [
-            'product' => $product
+        $request->validate([
+            'nama_produk' => 'required|string|max:255',
+            'kategori'    => 'required|string',
+            'harga'       => 'required|numeric',
+            'stok'        => 'required|integer',
+            'status'      => 'required|in:aktif,nonaktif',
+            'deskripsi'   => 'required|string',
+            'gambar'      => 'nullable|array', 
+            'gambar.*'    => 'image|mimes:jpg,jpeg,png|max:2048'
         ]);
+
+        $data = $request->only(['nama_produk', 'kategori', 'harga', 'stok', 'status', 'deskripsi']);
+
+        if ($request->hasFile('gambar')) {
+            if ($product->gambar) {
+                Storage::disk('public')->delete($product->gambar);
+            }
+            $data['gambar'] = $request->file('gambar')[0]->store('produk', 'public');
+        }
+
+        $product->update($data);
+
+        return redirect()->route('produk.index')->with('message', 'Properti berhasil diperbarui!');
+    }
+
+    public function destroy($id)
+    {
+        $product = Product::findOrFail($id);
+        
+        if ($product->gambar) {
+            Storage::disk('public')->delete($product->gambar);
+        }
+        
+        $product->delete();
+
+        return redirect()->route('produk.index')->with('success', 'Produk berhasil dihapus!');
     }
 }

@@ -4,7 +4,6 @@ import Sidebar from '@/components/sidebar';
 import Header from '@/components/sidebar-header'; 
 import { ImagePlus, AlertCircle, X, CheckCircle2 } from 'lucide-react';
 
-// Tambahkan interface props untuk data produk dan categories
 interface EditProps {
     produk: any;
     categories: Array<{ id: number; name: string }>;
@@ -12,13 +11,13 @@ interface EditProps {
 
 export default function EditProduk({ produk, categories }: EditProps) {
     const [isErrorShake, setIsErrorShake] = useState(false);
-    const [focusedField, setFocusedField] = useState<string | null>(null);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    
-    // --- TAMBAHAN: State untuk Notifikasi ---
     const [showSuccess, setShowSuccess] = useState(false);
+    
+    // State untuk menyembunyikan foto lama secara visual jika user ingin menggantinya
+    const [isOldImageRemoved, setIsOldImageRemoved] = useState(false);
 
-    const { data, setData, post, processing, errors, clearErrors } = useForm({
+    const { data, setData, post, processing, errors, clearErrors, setError } = useForm({
         _method: 'PUT',
         nama_produk: produk.nama_produk || '',
         kategori: produk.kategori || '',
@@ -26,10 +25,10 @@ export default function EditProduk({ produk, categories }: EditProps) {
         status: produk.status || 'aktif',
         stok: produk.stok || '',
         deskripsi: produk.deskripsi || '',
-        gambar: [] as File[], // Array untuk multiple file
+        gambar: [] as File[],
+        remove_old_image: false, // Flag tambahan untuk backend
     });
 
-    // --- TAMBAHAN: Auto-hide notifikasi ---
     useEffect(() => {
         if (showSuccess) {
             const timer = setTimeout(() => setShowSuccess(false), 3000);
@@ -55,204 +54,212 @@ export default function EditProduk({ produk, categories }: EditProps) {
     };
 
     const removeNewImage = (index: number) => {
-        const updatedFiles = data.gambar.filter((_, i) => i !== index);
-        setData('gambar', updatedFiles);
+        setData('gambar', data.gambar.filter((_, i) => i !== index));
+    };
+
+    const handleRemoveOldImage = () => {
+        setIsOldImageRemoved(true);
+        setData('remove_old_image', true);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setFocusedField(null);
+        clearErrors();
 
-        const isInvalid = !data.nama_produk || !data.kategori || !data.harga || !data.stok || !data.deskripsi;
+        let hasError = false;
+        const requiredFields = ['nama_produk', 'kategori', 'harga', 'stok', 'deskripsi'];
+        
+        requiredFields.forEach(field => {
+            if (!data[field as keyof typeof data]) {
+                setError(field as any, `${field.replace('_', ' ')} wajib diisi`);
+                hasError = true;
+            }
+        });
 
-        if (isInvalid) {
+        if (hasError) {
             setIsErrorShake(true);
             setTimeout(() => setIsErrorShake(false), 600);
             return;
         }
 
-        // --- DISESUAIKAN: alert diganti setShowSuccess ---
+        // Inertia 'post' dengan spoofing '_method: PUT' adalah cara terbaik untuk upload file saat update
         post(`/produk/${produk.id}`, {
             forceFormData: true,
-            onSuccess: () => setShowSuccess(true),
+            onSuccess: () => {
+                setShowSuccess(true);
+                setIsOldImageRemoved(false);
+            },
+            preserveScroll: true,
         });
     };
 
     return (
-        <div className="flex min-h-screen bg-white">
-            <Head title="Edit Properti - Admin" />
+        <div className="flex min-h-screen bg-white font-sans text-slate-900">
+            <Head title={`Edit ${produk.nama_produk} - Admin`} />
             <Sidebar />
 
             <div className="flex-1 flex flex-col">
                 <Header />
 
                 <main className="p-8 relative">
-                    {/* --- TAMBAHAN: UI Notifikasi --- */}
+                    {/* Success Toast */}
                     {showSuccess && (
                         <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[100] animate-fade-in">
-                            <div className="bg-[#1A4D2E] text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-3 border border-emerald-400">
-                                <CheckCircle2 size={18} />
-                                <span className="text-sm font-bold">Propeti berhasil diperbarui!</span>
+                            <div className="bg-[#1A4D2E] text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 border border-emerald-400">
+                                <CheckCircle2 size={18} className="text-emerald-400" />
+                                <span className="text-sm font-bold">Perubahan berhasil disimpan!</span>
                             </div>
                         </div>
                     )}
 
                     <div className="max-w-5xl">
                         <div className="mb-8">
-                            <h2 className="text-xl font-bold text-slate-900">Edit Informasi Properti</h2>
-                            <p className="text-sm text-slate-500 border-b pb-4">
-                                Perbarui informasi mengenai properti <strong>{produk.nama_produk}</strong>.
+                            <h2 className="text-2xl font-extrabold tracking-tight">Edit Properti</h2>
+                            <p className="text-sm text-slate-500 mt-1">
+                                Mengubah detail untuk <span className="font-bold text-slate-700">{produk.nama_produk}</span>
                             </p>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {/* Nama Produk */}
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-900">Nama Properti<span className="text-red-500">*</span></label>
+                                    <label className="text-sm font-bold">Nama Properti<span className="text-red-500 ml-1">*</span></label>
                                     <input
                                         type="text"
                                         value={data.nama_produk}
-                                        onFocus={() => { setFocusedField('nama_produk'); clearErrors('nama_produk'); }}
-                                        className={`w-full p-3 rounded-lg border outline-none transition-all text-slate-900 bg-white font-medium ${ (focusedField !== 'nama_produk' && (errors.nama_produk || (isErrorShake && !data.nama_produk))) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                         onChange={e => setData('nama_produk', e.target.value)}
+                                        className={`w-full p-3 rounded-xl border transition-all outline-none ${errors.nama_produk ? 'border-red-500 bg-red-50 animate-shake' : 'border-slate-200 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50'}`}
                                     />
-                                    {focusedField !== 'nama_produk' && (errors.nama_produk || (isErrorShake && !data.nama_produk)) && (
-                                        <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in">
-                                            <AlertCircle size={12} /> Nama properti tidak boleh kosong
-                                        </p>
-                                    )}
+                                    {errors.nama_produk && <p className="text-red-600 text-xs font-bold flex items-center gap-1 mt-1"><AlertCircle size={14} /> {errors.nama_produk}</p>}
                                 </div>
 
                                 {/* Status */}
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-900">Status</label>
+                                    <label className="text-sm font-bold">Status Unit</label>
                                     <select 
                                         value={data.status}
-                                        className="w-full p-3 rounded-lg border border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50 outline-none bg-white text-slate-900 font-bold"
                                         onChange={e => setData('status', e.target.value)}
+                                        className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50 outline-none font-bold"
                                     >
-                                        <option value="aktif">Aktif</option>
-                                        <option value="nonaktif">Non-Aktif</option>
+                                        <option value="aktif">Aktif (Tersedia)</option>
+                                        <option value="nonaktif">Non-Aktif (Terjual/Arsip)</option>
                                     </select>
                                 </div>
 
-                                {/* Kategori - DINAMIS */}
+                                {/* Kategori */}
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-900">Kategori<span className="text-red-500">*</span></label>
+                                    <label className="text-sm font-bold">Kategori<span className="text-red-500 ml-1">*</span></label>
                                     <select 
                                         value={data.kategori}
-                                        onFocus={() => { setFocusedField('kategori'); clearErrors('kategori'); }}
-                                        className={`w-full p-3 rounded-lg border outline-none bg-white text-slate-900 font-bold ${ (focusedField !== 'kategori' && (errors.kategori || (isErrorShake && !data.kategori))) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                         onChange={e => setData('kategori', e.target.value)}
+                                        className={`w-full p-3 rounded-xl border transition-all outline-none font-bold ${errors.kategori ? 'border-red-500 bg-red-50 animate-shake' : 'border-slate-200 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50'}`}
                                     >
-                                        <option value="">Pilih kategori properti</option>
-                                        {categories && categories.map((cat) => (
-                                            <option key={cat.id} value={cat.name}>
-                                                {cat.name}
-                                            </option>
+                                        <option value="">Pilih Kategori</option>
+                                        {categories?.map((cat) => (
+                                            <option key={cat.id} value={cat.name}>{cat.name}</option>
                                         ))}
                                     </select>
-                                    {focusedField !== 'kategori' && (errors.kategori || (isErrorShake && !data.kategori)) && (
-                                        <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in">
-                                            <AlertCircle size={12} /> Kategori wajib dipilih
-                                        </p>
-                                    )}
                                 </div>
 
                                 {/* Stok */}
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-900">Stok Unit<span className="text-red-500">*</span></label>
+                                    <label className="text-sm font-bold">Stok Unit<span className="text-red-500 ml-1">*</span></label>
                                     <input
                                         type="number"
                                         value={data.stok}
-                                        onFocus={() => { setFocusedField('stok'); clearErrors('stok'); }}
-                                        className={`w-full p-3 rounded-lg border outline-none text-slate-900 bg-white font-medium ${ (focusedField !== 'stok' && (errors.stok || (isErrorShake && !data.stok))) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                         onChange={e => setData('stok', e.target.value)}
+                                        className={`w-full p-3 rounded-xl border transition-all outline-none ${errors.stok ? 'border-red-500 bg-red-50 animate-shake' : 'border-slate-200 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50'}`}
                                     />
-                                    {focusedField !== 'stok' && (errors.stok || (isErrorShake && !data.stok)) && (
-                                        <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in">
-                                            <AlertCircle size={12} /> Stok unit harus diisi
-                                        </p>
-                                    )}
                                 </div>
 
                                 {/* Harga */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-900">Harga Jual<span className="text-red-500">*</span></label>
+                                <div className="space-y-2 md:col-span-2">
+                                    <label className="text-sm font-bold">Harga Jual<span className="text-red-500 ml-1">*</span></label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-3.5 text-slate-900 font-bold text-sm">Rp</span>
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">Rp</span>
                                         <input
                                             type="number"
                                             value={data.harga}
-                                            onFocus={() => { setFocusedField('harga'); clearErrors('harga'); }}
-                                            className={`w-full p-3 pl-10 rounded-lg border outline-none text-slate-900 bg-white font-bold ${ (focusedField !== 'harga' && (errors.harga || (isErrorShake && !data.harga))) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                             onChange={e => setData('harga', e.target.value)}
+                                            className={`w-full p-3 pl-12 rounded-xl border transition-all outline-none font-extrabold text-lg ${errors.harga ? 'border-red-500 bg-red-50 animate-shake' : 'border-slate-200 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50'}`}
                                         />
                                     </div>
-                                    {focusedField !== 'harga' && (errors.harga || (isErrorShake && !data.harga)) && (
-                                        <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in mt-1">
-                                            <AlertCircle size={12} /> Harga properti wajib diisi
-                                        </p>
-                                    )}
                                 </div>
                             </div>
 
                             {/* Deskripsi */}
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-900">Deskripsi Properti<span className="text-red-500">*</span></label>
+                                <label className="text-sm font-bold">Deskripsi Lengkap</label>
                                 <textarea
-                                    rows={4}
+                                    rows={5}
                                     value={data.deskripsi}
-                                    onFocus={() => { setFocusedField('deskripsi'); clearErrors('deskripsi'); }}
-                                    className={`w-full p-3 rounded-lg border outline-none resize-none text-slate-900 bg-white font-medium ${ (focusedField !== 'deskripsi' && (errors.deskripsi || (isErrorShake && !data.deskripsi))) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                     onChange={e => setData('deskripsi', e.target.value)}
+                                    className={`w-full p-4 rounded-xl border transition-all outline-none resize-none ${errors.deskripsi ? 'border-red-500 bg-red-50 animate-shake' : 'border-slate-200 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50'}`}
+                                    placeholder="Tuliskan spesifikasi detail properti..."
                                 ></textarea>
-                                {focusedField !== 'deskripsi' && (errors.deskripsi || (isErrorShake && !data.deskripsi)) && (
-                                    <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in">
-                                        <AlertCircle size={12} /> Deskripsi wajib diisi
-                                    </p>
-                                )}
                             </div>
 
-                            {/* Unggah Gambar */}
+                            {/* Media Section */}
                             <div className="space-y-4">
-                                <label className="text-sm font-bold text-slate-900">Media / Foto Properti</label>
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                    <div className={`aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors relative overflow-hidden bg-white ${ (focusedField === 'gambar' || errors.gambar) ? 'border-red-500 bg-red-50' : 'border-slate-300' }`} >
-                                        <input type="file" multiple accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" onFocus={() => setFocusedField('gambar')} onChange={handleFileChange} />
-                                        <ImagePlus className="text-slate-400 mb-2" size={32} />
-                                        <span className="text-xs text-slate-500 font-bold text-center px-2">Update Foto</span>
-                                    </div>
-
-                                    {imagePreviews.map((url, index) => (
-                                        <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 group ring-2 ring-emerald-500">
-                                            <img src={url} alt="Preview Baru" className="w-full h-full object-cover" />
-                                            <button type="button" onClick={() => removeNewImage(index)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 shadow-lg z-20">
-                                                <X size={14} />
-                                            </button>
-                                            <div className="absolute bottom-0 inset-x-0 bg-emerald-500 text-[8px] text-white text-center font-bold py-1">BARU</div>
+                                <div className="flex justify-between items-end">
+                                    <label className="text-sm font-bold uppercase tracking-wider text-slate-500">Foto Properti</label>
+                                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Mendukung Multiple Upload</span>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                    {/* Dropzone */}
+                                    <label className="aspect-square border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-50 hover:border-emerald-400 transition-all group bg-slate-50">
+                                        <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
+                                        <div className="bg-white p-2 rounded-full shadow-sm group-hover:scale-110 transition-transform">
+                                            <ImagePlus className="text-[#1A4D2E]" size={24} />
                                         </div>
-                                    ))}
+                                        <span className="text-[10px] mt-2 font-bold text-slate-500 uppercase">Tambah</span>
+                                    </label>
 
-                                    {produk.gambar && (
-                                        <div className="relative aspect-square rounded-xl overflow-hidden border-2 border-slate-200 shadow-sm group">
-                                            <img src={`/storage/${produk.gambar}`} alt="Lama" className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" />
-                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-2">
-                                                <span className="text-[10px] bg-slate-800 text-white px-2 py-1 rounded-md font-bold uppercase shadow-sm">Foto Saat Ini</span>
+                                    {/* Existing Photo */}
+                                    {produk.gambar && !isOldImageRemoved && (
+                                        <div className="relative aspect-square rounded-2xl overflow-hidden border-2 border-slate-100 group shadow-sm">
+                                            <img src={`/storage/${produk.gambar}`} alt="Current" className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <button 
+                                                    type="button" 
+                                                    onClick={handleRemoveOldImage}
+                                                    className="bg-white text-red-600 p-2 rounded-full hover:scale-110 transition-transform"
+                                                >
+                                                    <X size={18} />
+                                                </button>
                                             </div>
+                                            <div className="absolute top-2 left-2 bg-slate-900/80 text-[8px] text-white px-2 py-1 rounded font-bold uppercase">Foto Saat Ini</div>
                                         </div>
                                     )}
+
+                                    {/* New Previews */}
+                                    {imagePreviews.map((url, index) => (
+                                        <div key={index} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-md animate-fade-in">
+                                            <img src={url} alt="New preview" className="w-full h-full object-cover" />
+                                            <button 
+                                                type="button" 
+                                                onClick={() => removeNewImage(index)} 
+                                                className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 shadow-lg hover:bg-red-700"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                            <div className="absolute bottom-0 inset-x-0 bg-emerald-500 text-[8px] text-white text-center font-bold py-1 uppercase">Baru</div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <p className="text-[11px] text-slate-500 font-medium italic">*Kosongkan jika tidak ingin mengganti foto utama.</p>
                             </div>
 
-                            <div className="flex justify-end gap-4 pt-6 border-t">
-                                <Link href="/produk" className="px-10 py-2.5 rounded-lg bg-slate-500 text-white hover:bg-slate-600 transition-colors font-bold text-sm shadow-sm">
+                            <div className="flex items-center justify-end gap-4 pt-8 border-t border-slate-100">
+                                <Link href="/produk" className="px-8 py-3 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors font-bold text-sm">
                                     Batal
                                 </Link>
-                                <button type="submit" disabled={processing} className="px-10 py-2.5 rounded-lg bg-[#1A4D2E] text-white hover:bg-[#143524] transition-all 
-                                font-bold text-sm shadow-md active:scale-95 disabled:opacity-50">
+                                <button 
+                                    type="submit" 
+                                    disabled={processing} 
+                                    className="px-10 py-3 rounded-xl bg-[#1A4D2E] text-white hover:bg-[#143524] transition-all font-bold text-sm shadow-lg shadow-emerald-900/20 disabled:opacity-50 flex items-center gap-2"
+                                >
                                     {processing ? 'Menyimpan...' : 'Perbarui Properti'}
                                 </button>
                             </div>
@@ -262,10 +269,10 @@ export default function EditProduk({ produk, categories }: EditProps) {
             </div>
 
             <style dangerouslySetInnerHTML={{ __html: `
-                @keyframes shakeError { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-                @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes shakeError { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+                @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
                 .animate-shake { animation: shakeError 0.2s ease-in-out 0s 2; }
-                .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+                .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
             `}} />
         </div>
     );

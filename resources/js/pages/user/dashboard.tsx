@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react'; // Tambahkan useState
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import { 
     Search, 
@@ -11,18 +11,29 @@ import {
     Flame, 
     ArrowRight,
     Calculator,
-    LayoutDashboard
+    LayoutDashboard,
+    Lock // Tambahkan icon kunci untuk kesan eksklusif
 } from 'lucide-react';
 
 export default function UserDashboard() {
     const { auth, products } = usePage().props as any;
+    
+    // 1. STATE UNTUK MODAL PERINGATAN
+    const [showAuthModal, setShowAuthModal] = useState(false);
 
-    // Menangani data baik dari get() maupun paginate()
     const dataProduk = products?.data || (Array.isArray(products) ? products : []);
 
     const handleLogout = () => {
         if (confirm('Apakah Anda yakin ingin keluar dari PropertyKu?')) {
             router.post('/logout');
+        }
+    };
+
+    // 2. FUNGSI UNTUK CEK LOGIN SEBELUM LIHAT DETAIL
+    const handleCardClick = (e: React.MouseEvent, productId: number) => {
+        if (!auth.user) {
+            e.preventDefault(); // Batalkan navigasi ke link
+            setShowAuthModal(true); // Tampilkan modal
         }
     };
 
@@ -120,8 +131,8 @@ export default function UserDashboard() {
                 ))}
             </div>
 
-  {/* PROPERTY LIST SECTION */}
-  <div className="max-w-7xl mx-auto px-8 py-20">
+            {/* PROPERTY LIST SECTION */}
+            <div className="max-w-7xl mx-auto px-8 py-20">
                 <div className="flex items-end justify-between mb-10">
                     <div className="space-y-2">
                         <div className="inline-block bg-emerald-100 text-emerald-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Rekomendasi</div>
@@ -138,20 +149,22 @@ export default function UserDashboard() {
                             <Link 
                                 href={`/products/${product.id}`} 
                                 key={product.id} 
+                                onClick={(e) => handleCardClick(e, product.id)} // Sesuai permintaan
                                 className="group bg-white rounded-[1.5rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
                             >
                                 <div className="relative h-60 overflow-hidden">
                                     <img 
                                         src={product.gambar ? `/storage/${product.gambar}` : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=2070&auto=format&fit=crop'} 
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                                        className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ${!auth.user ? 'blur-sm grayscale-[30%]' : ''}`} 
                                         alt={product.nama_produk} 
                                     />
                                     
                                     <button 
                                         onClick={(e) => { 
                                             e.preventDefault(); 
+                                            e.stopPropagation(); // Biar link card gak kepicu
                                             if (!auth.user) {
-                                                router.get('/login');
+                                                setShowAuthModal(true);
                                             } else {
                                                 alert('Properti disimpan ke favorit!'); 
                                             }
@@ -160,6 +173,14 @@ export default function UserDashboard() {
                                     >
                                         <Bookmark size={16} />
                                     </button>
+
+                                    {!auth.user && (
+                                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="bg-white/90 p-3 rounded-full shadow-lg">
+                                                <Lock size={20} className="text-emerald-700" />
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="absolute bottom-4 left-4 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-md tracking-tighter uppercase z-10">
                                         {product.kategori}
@@ -188,8 +209,8 @@ export default function UserDashboard() {
                                                 {formatIDR(product.harga)}
                                             </span>
                                             {!auth.user && (
-                                                <span className="text-[9px] text-emerald-600 font-bold italic mt-1">
-                                                    * Login untuk lihat detail
+                                                <span className="text-[9px] text-rose-500 font-bold italic mt-1 uppercase tracking-tighter">
+                                                    * Login untuk akses penuh
                                                 </span>
                                             )}
                                         </div>
@@ -208,6 +229,55 @@ export default function UserDashboard() {
                     )}
                 </div>
             </div>
+
+            {/* 3. MODAL NOTIFIKASI PERINGATAN */}
+            {showAuthModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    {/* Overlay Gelap */}
+                    <div 
+                        className="absolute inset-0 bg-[#1a432d]/60 backdrop-blur-md transition-opacity animate-in fade-in"
+                        onClick={() => setShowAuthModal(false)}
+                    />
+                    
+                    {/* Konten Modal */}
+                    <div className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in slide-in-from-bottom-8 duration-300 text-center overflow-hidden">
+                        {/* Aksen Dekorasi */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -mr-16 -mt-16 z-0" />
+                        
+                        <div className="relative z-10">
+                            <div className="w-20 h-20 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6 rotate-3 shadow-sm shadow-emerald-200">
+                                <Lock size={40} className="text-emerald-600 -rotate-3" />
+                            </div>
+
+                            <h3 className="text-2xl font-black text-[#1a432d] mb-3">Satu Langkah Lagi!</h3>
+                            <p className="text-slate-500 text-sm mb-8 px-4">
+                                Bergabunglah dengan <span className="text-emerald-600 font-bold">PropertyKu</span> untuk melihat detail properti, lokasi tepatnya, dan melakukan simulasi cicilan.
+                            </p>
+
+                            <div className="grid grid-cols-1 gap-3">
+                                <Link 
+                                    href="/login" 
+                                    className="bg-[#1a432d] text-white font-bold py-4 rounded-2xl hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-900/20 active:scale-95"
+                                >
+                                    Masuk ke Akun
+                                </Link>
+                                <Link 
+                                    href="/register" 
+                                    className="bg-emerald-500 text-white font-bold py-4 rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                                >
+                                    Daftar Gratis
+                                </Link>
+                                <button 
+                                    onClick={() => setShowAuthModal(false)}
+                                    className="mt-2 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] hover:text-rose-500 transition-colors"
+                                >
+                                    Nanti Saja
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* FOOTER */}
             <footer className="bg-slate-900 py-12 text-center">
