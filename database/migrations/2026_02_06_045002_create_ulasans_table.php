@@ -13,15 +13,23 @@ return new class extends Migration
     {
         Schema::create('ulasans', function (Blueprint $table) {
             $table->id();
-            // Relasi ke tabel users (siapa yang memberikan ulasan)
+            // Siapa yang komentar
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             
-            // Relasi ke tabel produks (produk mana yang diulas)
-            // Sesuaikan 'produks' dengan nama tabel produk kamu
+            // Produk mana yang diulas (Tabel: produks)
             $table->foreignId('produk_id')->constrained('produks')->onDelete('cascade');
             
-            $table->text('isi_ulasan'); // Kolom untuk teks komentar
-            $table->integer('rating');   // Kolom untuk jumlah bintang (1-5)
+            // Kolom untuk fitur balas-balasan antar User
+            // Jika NULL = Ulasan Utama. Jika ISI ID = Balasan untuk ulasan ID tersebut.
+            $table->foreignId('parent_id')->nullable()->constrained('ulasans')->onDelete('cascade');
+            
+            $table->text('isi_ulasan');
+            $table->integer('rating')->nullable(); // Dibuat nullable karena balasan biasanya gak pake rating bintang
+            
+            // Kolom tambahan untuk fitur balasan Admin & Notifikasi
+            $table->text('admin_reply')->nullable(); 
+            $table->boolean('is_read')->default(true); 
+            
             $table->timestamps();
         });
     }

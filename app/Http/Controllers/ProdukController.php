@@ -10,20 +10,26 @@ use Inertia\Inertia;
 
 class ProdukController extends Controller
 {
+    /**
+     * Menampilkan daftar produk (Admin & User)
+     */
     public function index(Request $request)
     {
         $query = Product::query();
 
+        // Pencarian berdasarkan nama
         if ($request->filled('search')) {
             $search = trim($request->search);
             $query->where('nama_produk', 'like', "%{$search}%");
         }
 
+        // Filter kategori
         if ($request->filled('category') && $request->category !== 'Semua Kategori') {
             $category = trim($request->category);
             $query->where('kategori', $category);
         }
 
+        // Cek apakah ini akses admin atau user
         $isAdminRoute = $request->is('produk*') || $request->is('admin*');
 
         if (!$isAdminRoute) {
@@ -34,12 +40,13 @@ class ProdukController extends Controller
             ->paginate($isAdminRoute ? 10 : 12)
             ->withQueryString();
 
-        // ✅ Tambahkan URL gambar ke setiap produk di list
+        //  Inject gambar_url ke dalam koleksi pagination
         $products->getCollection()->transform(function ($product) {
             $product->gambar_url = $product->gambar ? asset('storage/' . $product->gambar) : null;
             return $product;
         });
 
+        // Ambil daftar kategori untuk filter dropdown
         $categoriesList = Category::all()->map(function($cat) {
             return $cat->nama_kategori ?? $cat->name;
         })->filter()->values();
@@ -57,14 +64,21 @@ class ProdukController extends Controller
     }
 
     /**
-     * ✅ UPDATE: Method Show sekarang membawa relasi ulasan & user
+     *  UPDATE: Menampilkan detail produk beserta ulasan & balasannya
      */
     public function show($id)
     {
-        // Ambil produk dengan relasi ulasans dan user di dalam ulasan tersebut
-        $product = Product::with(['ulasans.user'])->findOrFail($id);
+        // Menggunakan Eager Loading agar tidak berat (N+1 Query)
+        // Kita hanya ambil ulasan utama (parent_id null), lalu muat balasannya
+        $product = Product::with([
+            'ulasans' => function ($query) {
+                $query->whereNull('parent_id') 
+                      ->with(['user:id,username', 'replies.user:id,username']) 
+                      ->latest();
+            }
+        ])->findOrFail($id);
 
-        // Tambahkan attribute gambar_url secara manual sebelum dikirim ke FE
+        // Tambahkan URL gambar
         $product->gambar_url = $product->gambar ? asset('storage/' . $product->gambar) : null;
 
         return Inertia::render('user/product_detail', [
@@ -98,6 +112,7 @@ class ProdukController extends Controller
         ]);
 
         if ($request->hasFile('gambar')) {
+            // Ambil file pertama dari array gambar
             $validated['gambar'] = $request->file('gambar')[0]->store('produk', 'public');
         }
 
@@ -141,6 +156,7 @@ class ProdukController extends Controller
         $data = $request->only(['nama_produk', 'kategori', 'harga', 'stok', 'status', 'deskripsi']);
 
         if ($request->hasFile('gambar')) {
+            // Hapus gambar lama jika ada
             if ($product->gambar) {
                 Storage::disk('public')->delete($product->gambar);
             }
