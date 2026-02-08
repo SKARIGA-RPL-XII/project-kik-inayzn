@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth; // Tambahkan ini
 use Inertia\Inertia;
 
 class ProdukController extends Controller
@@ -40,144 +41,58 @@ class ProdukController extends Controller
             ->paginate($isAdminRoute ? 10 : 12)
             ->withQueryString();
 
-        //  Inject gambar_url ke dalam koleksi pagination
+        // Inject gambar_url
         $products->getCollection()->transform(function ($product) {
             $product->gambar_url = $product->gambar ? asset('storage/' . $product->gambar) : null;
             return $product;
         });
 
-        // Ambil daftar kategori untuk filter dropdown
         $categoriesList = Category::all()->map(function($cat) {
             return $cat->nama_kategori ?? $cat->name;
         })->filter()->values();
 
-        $filters = [
-            'search' => $request->search ?? '',
-            'category' => $request->category ?? 'Semua Kategori'
-        ];
-
         return Inertia::render($isAdminRoute ? 'admin/produk/index' : 'user/product', [
             'products'   => $products,
             'categories' => $categoriesList,
-            'filters'    => $filters
+            'filters'    => $request->only(['search', 'category'])
         ]);
     }
 
     /**
-     *  UPDATE: Menampilkan detail produk beserta ulasan & balasannya
+     * TAMPILAN DETAIL: Mengambil produk + Ulasan + Balasan
      */
     public function show($id)
     {
-        // Menggunakan Eager Loading agar tidak berat (N+1 Query)
-        // Kita hanya ambil ulasan utama (parent_id null), lalu muat balasannya
         $product = Product::with([
             'ulasans' => function ($query) {
-                $query->whereNull('parent_id') 
-                      ->with(['user:id,username', 'replies.user:id,username']) 
+                $query->whereNull('parent_id') // Hanya ulasan utama
+                      ->with([
+                          'user:id,username,avatar', // Tambahkan avatar jika ada
+                          'replies.user:id,username,avatar' 
+                      ]) 
                       ->latest();
             }
         ])->findOrFail($id);
 
-        // Tambahkan URL gambar
         $product->gambar_url = $product->gambar ? asset('storage/' . $product->gambar) : null;
 
+        // --- FITUR TAMBAHAN: AUTO-READ NOTIFIKASI ---
+        // Jika user masuk ke halaman detail produk, kita bisa tandai notifikasi 
+        // yang berhubungan dengan produk ini sebagai "sudah dibaca"
+        if (Auth::check()) {
+            Auth::user()->unreadNotifications()
+                ->where('data->produk_id', $id)
+                ->get()
+                ->markAsRead();
+        }
+
         return Inertia::render('user/product_detail', [
-            'product' => $product
+            'product' => $product,
+            // Kirim status apakah user ini sudah pernah kasih ulasan (untuk proteksi UI)
+            'user_has_reviewed' => Auth::check() 
+                ? $product->ulasans->where('user_id', Auth::id())->count() > 0 
+                : false
         ]);
     }
 
-    public function create()
-    {
-        return Inertia::render('admin/produk/create', [
-            'categories' => Category::all()->map(function($cat) {
-                return [
-                    'id' => $cat->id,
-                    'name' => $cat->nama_kategori ?? $cat->name
-                ];
-            })
-        ]);
-    }
-
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'nama_produk' => 'required|string|max:255',
-            'kategori'    => 'required|string',
-            'harga'       => 'required|numeric',
-            'stok'        => 'required|integer',
-            'deskripsi'   => 'nullable|string',
-            'status'      => 'required|in:aktif,nonaktif',
-            'gambar'      => 'required|array|min:1',
-            'gambar.*'    => 'image|mimes:jpg,jpeg,png|max:2048'
-        ]);
-
-        if ($request->hasFile('gambar')) {
-            // Ambil file pertama dari array gambar
-            $validated['gambar'] = $request->file('gambar')[0]->store('produk', 'public');
-        }
-
-        Product::create($validated);
-
-        return redirect()->route('produk.index')->with('success', 'Produk berhasil dibuat!');
-    }
-
-    public function edit($id)
-    {
-        $produk = Product::findOrFail($id);
-        
-        $categories = Category::all()->map(function($cat) {
-            return [
-                'id' => $cat->id,
-                'name' => $cat->nama_kategori ?? $cat->name
-            ];
-        });
-
-        return Inertia::render('admin/produk/edit', [
-            'produk' => $produk,
-            'categories' => $categories
-        ]);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $product = Product::findOrFail($id);
-
-        $request->validate([
-            'nama_produk' => 'required|string|max:255',
-            'kategori'    => 'required|string',
-            'harga'       => 'required|numeric',
-            'stok'        => 'required|integer',
-            'status'      => 'required|in:aktif,nonaktif',
-            'deskripsi'   => 'required|string',
-            'gambar'      => 'nullable|array', 
-            'gambar.*'    => 'image|mimes:jpg,jpeg,png|max:2048'
-        ]);
-
-        $data = $request->only(['nama_produk', 'kategori', 'harga', 'stok', 'status', 'deskripsi']);
-
-        if ($request->hasFile('gambar')) {
-            // Hapus gambar lama jika ada
-            if ($product->gambar) {
-                Storage::disk('public')->delete($product->gambar);
-            }
-            $data['gambar'] = $request->file('gambar')[0]->store('produk', 'public');
-        }
-
-        $product->update($data);
-
-        return redirect()->route('produk.index')->with('message', 'Properti berhasil diperbarui!');
-    }
-
-    public function destroy($id)
-    {
-        $product = Product::findOrFail($id);
-        
-        if ($product->gambar) {
-            Storage::disk('public')->delete($product->gambar);
-        }
-        
-        $product->delete();
-
-        return redirect()->route('produk.index')->with('success', 'Produk berhasil dihapus!');
-    }
 }

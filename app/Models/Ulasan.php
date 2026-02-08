@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany; // Tambahkan ini
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Ulasan extends Model
 {
@@ -15,7 +15,7 @@ class Ulasan extends Model
         'isi_ulasan',
         'rating',
         'admin_reply',  
-        'is_read',      
+        // 'is_read' dihapus dari fillable karena kita pakai tabel 'notifications' sekarang
     ];
 
     /**
@@ -35,16 +35,16 @@ class Ulasan extends Model
     }
 
     /**
-     *  RELASI BARU: Mendapatkan balasan untuk ulasan ini.
-     * Digunakan untuk fitur diskusi antar user.
+     * Mendapatkan balasan (thread) untuk ulasan ini.
      */
     public function replies(): HasMany
     {
+        // 'with' user memastikan nama pengirim balasan langsung terbawa ke frontend
         return $this->hasMany(Ulasan::class, 'parent_id')->with('user');
     }
 
     /**
-     *  RELASI BARU: Mengetahui ulasan ini membalas siapa.
+     * Mengetahui ulasan ini membalas ulasan yang mana.
      */
     public function parent(): BelongsTo
     {
