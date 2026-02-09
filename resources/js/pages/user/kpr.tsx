@@ -265,6 +265,18 @@ export default function KPRSimulator() {
                     </div>
                 </div>
             )}
+            {/* FOOTER */}
+            <footer className="bg-slate-900 py-12 text-center">
+                <div className="max-w-7xl mx-auto px-8">
+                    <img src="/images/logo.png" alt="Logo" className="h-8 w-auto mx-auto mb-4 brightness-0 invert opacity-50" />
+                    <div className="flex justify-center gap-6 mb-6">
+                        <Link href="/products" className="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Properti</Link>
+                        <Link href="/simulator-kpr" className="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">KPR</Link>
+                        <Link href="/login" className="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Login</Link>
+                    </div>
+                    <p className="text-slate-600 text-[9px] font-bold uppercase tracking-[0.2em]">&copy; 2026 PropertyKu. All rights reserved.</p>
+                </div>
+            </footer>
         </div>
     );
 }

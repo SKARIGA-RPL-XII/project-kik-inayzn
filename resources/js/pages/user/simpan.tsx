@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import { 
@@ -14,17 +15,31 @@ import {
     ArrowRight,
     Trash2,
     HeartOff,
-    Lock,
-    LogIn // Tambah icon login
+    Lock
 } from 'lucide-react';
 
-export default function SavedProperties() {
+// 1. Definisi Type agar lebih aman (Type Safety)
+interface Property {
+    id: number;
+    nama_produk: string;
+    lokasi: string;
+    harga: number;
+    jumlah_kamar_tidur: number;
+    jumlah_kamar_mandi: number;
+    luas_bangunan: number;
+    gambar_url?: string; // Pastikan controller mengirimkan attribute ini atau path gambar
+}
+
+interface SavedItem {
+    id: number;
+    produk_id: number;
+    produk: Property;
+}
+
+export default function Simpan({ savedProperties }: { savedProperties: SavedItem[] }) {
     const { auth } = usePage().props as any;
-    
-    // State Modal
     const [showAuthModal, setShowAuthModal] = useState(false);
 
-    // Fungsi Logout seragam
     const handleLogout = () => {
         if (confirm('Apakah Anda yakin ingin keluar dari PropertyKu?')) {
             router.post('/logout', {}, {
@@ -36,27 +51,13 @@ export default function SavedProperties() {
         }
     };
 
-    // Fungsi klik tombol "Lihat Koleksi"
     const handleCheckCollection = () => {
         if (!auth.user) {
             setShowAuthModal(true);
         }
     };
 
-    // Data dummy (Hanya ada jika login)
-    const savedItems = auth.user ? [
-        {
-            id: 1,
-            title: "Modern Family Home",
-            location: "BSD City, Tangerang",
-            price: 1500000000,
-            beds: 3,
-            baths: 2,
-            sqft: 120,
-            image: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&q=80&w=800"
-        }
-    ] : [];
-
+    // 2. Fungsi Format Rupiah yang bersih
     const formatRupiah = (value: number) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -76,7 +77,7 @@ export default function SavedProperties() {
                         <img src="/images/logo.png" alt="Logo" className="h-8 w-auto object-contain brightness-0 invert" />
                     </Link>
                     <div className="hidden lg:flex items-center gap-6 ml-4 border-l border-emerald-800 pl-8">
-                        <Link href="/dashboard" className="text-sm font-bold opacity-70 hover:opacity-100 flex items-center gap-2 transition-all">
+                        <Link href="/user/dashboard" className="text-sm font-bold opacity-70 hover:opacity-100 flex items-center gap-2 transition-all">
                             <LayoutDashboard size={16}/> Dashboard
                         </Link>
                         <Link href="/products" className="text-sm font-bold opacity-70 hover:opacity-100 flex items-center gap-2 transition-all">
@@ -119,32 +120,44 @@ export default function SavedProperties() {
             </div>
 
             <main className="max-w-7xl mx-auto px-8 -mt-20 pb-20">
-                {/* LOGIC TAMPILAN */}
-                {auth.user && savedItems.length > 0 ? (
-                    // 1. Tampilan Jika Ada Data (Sudah Login)
+                {auth.user && savedProperties.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {savedItems.map((item) => (
+                        {savedProperties.map((item) => (
                             <div key={item.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 group transition-all hover:-translate-y-2">
                                 <div className="relative h-60 overflow-hidden">
-                                    <img src={item.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                    <button className="absolute top-4 right-4 bg-white/20 backdrop-blur-md p-2 rounded-full text-white hover:bg-rose-500 transition-all">
+                                    {/* 3. Logic Gambar: Menggunakan storage link Laravel */}
+                                    <img 
+                                        src={item.produk.gambar_url ? item.produk.gambar_url : '/images/placeholder-house.jpg'} 
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                                        alt={item.produk.nama_produk}
+                                    />
+                                    {/* 4. Tombol Hapus: Mengirim POST request ke route save/unsave */}
+                                    <Link 
+                                        href={`/products/${item.produk_id}/save`} 
+                                        method="post" 
+                                        as="button"
+                                        preserveScroll
+                                        className="absolute top-4 right-4 bg-white/20 backdrop-blur-md p-2 rounded-full text-white hover:bg-rose-500 transition-all border-none"
+                                    >
                                         <Trash2 size={18} />
-                                    </button>
+                                    </Link>
                                 </div>
                                 <div className="p-8">
-                                    <h3 className="text-xl font-black text-slate-800 mb-1">{item.title}</h3>
-                                    <p className="flex items-center gap-1 text-slate-400 text-sm mb-4"><MapPin size={14} className="text-emerald-500" /> {item.location}</p>
+                                    <h3 className="text-xl font-black text-slate-800 mb-1 truncate">{item.produk.nama_produk}</h3>
+                                    <p className="flex items-center gap-1 text-slate-400 text-sm mb-4">
+                                        <MapPin size={14} className="text-emerald-500" /> {item.produk.lokasi}
+                                    </p>
                                     <div className="flex justify-between items-center py-4 border-y border-slate-50 mb-6 font-bold text-slate-600 text-xs">
-                                        <span className="flex items-center gap-1.5"><BedDouble size={16} className="text-emerald-500" /> {item.beds} KT</span>
-                                        <span className="flex items-center gap-1.5"><Bath size={16} className="text-emerald-500" /> {item.baths} KM</span>
-                                        <span className="flex items-center gap-1.5"><Square size={16} className="text-emerald-500" /> {item.sqft} m²</span>
+                                        <span className="flex items-center gap-1.5"><BedDouble size={16} className="text-emerald-500" /> {item.produk.jumlah_kamar_tidur} KT</span>
+                                        <span className="flex items-center gap-1.5"><Bath size={16} className="text-emerald-500" /> {item.produk.jumlah_kamar_mandi} KM</span>
+                                        <span className="flex items-center gap-1.5"><Square size={16} className="text-emerald-500" /> {item.produk.luas_bangunan} m²</span>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Harga</p>
-                                            <p className="text-xl font-black text-emerald-600">{formatRupiah(item.price)}</p>
+                                            <p className="text-xl font-black text-emerald-600">{formatRupiah(item.produk.harga)}</p>
                                         </div>
-                                        <Link href={`/products/${item.id}`} className="bg-slate-900 text-white p-3 rounded-2xl hover:bg-emerald-500 transition-all shadow-lg">
+                                        <Link href={`/products/${item.produk_id}`} className="bg-slate-900 text-white p-3 rounded-2xl hover:bg-emerald-500 transition-all shadow-lg">
                                             <ArrowRight size={20} />
                                         </Link>
                                     </div>
@@ -153,7 +166,6 @@ export default function SavedProperties() {
                         ))}
                     </div>
                 ) : (
-                    // 2. Empty State (Belum Login / Tidak ada data)
                     <div className="bg-white rounded-[2.5rem] p-20 text-center shadow-xl border border-slate-100">
                         <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
                             <HeartOff size={40} className="text-slate-200" />
@@ -175,7 +187,7 @@ export default function SavedProperties() {
                 )}
             </main>
 
-            {/* MODAL PERINGATAN (Hanya muncul jika klik 'Buka Koleksi' tapi belum login) */}
+            {/* MODAL AUTH */}
             {showAuthModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-[#1a432d]/60 backdrop-blur-md animate-in fade-in" onClick={() => setShowAuthModal(false)} />
@@ -198,6 +210,19 @@ export default function SavedProperties() {
                     </div>
                 </div>
             )}
+
+            {/* FOOTER */}
+            <footer className="bg-slate-900 py-12 text-center">
+                <div className="max-w-7xl mx-auto px-8">
+                    <img src="/images/logo.png" alt="Logo" className="h-8 w-auto mx-auto mb-4 brightness-0 invert opacity-50" />
+                    <div className="flex justify-center gap-6 mb-6">
+                        <Link href="/products" className="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Properti</Link>
+                        <Link href="/simulator-kpr" className="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">KPR</Link>
+                        <Link href="/login" className="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Login</Link>
+                    </div>
+                    <p className="text-slate-600 text-[9px] font-bold uppercase tracking-[0.2em]">&copy; 2026 PropertyKu. All rights reserved.</p>
+                </div>
+            </footer>
         </div>
     );
 }

@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Search, Plus, Edit, Trash2, X, Eye, EyeOff, Sparkles } from 'lucide-react'; // Tambah Sparkles
+import { Search, Plus, Edit, Trash2, X, Eye, EyeOff, Sparkles, UserPlus } from 'lucide-react'; 
 import Sidebar from '@/components/sidebar'; 
 import Header from '@/components/sidebar-header';
 
 export default function UserIndex({ admins, users }: any) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Tambahan state
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [selectedUser, setSelectedUser] = useState<any>(null);
 
-    // Form helper untuk Create & Edit
     const { data, setData, post, put, processing, errors, reset } = useForm({
         username: '',
         email: '',
@@ -60,7 +59,7 @@ export default function UserIndex({ admins, users }: any) {
         }
     };
 
-    // --- LOGIKA MODAL HAPUS (DISESUAIKAN) ---
+    // --- LOGIKA MODAL HAPUS ---
     const openDeleteModal = (user: any) => {
         setSelectedUser(user);
         setIsDeleteModalOpen(true);
@@ -91,7 +90,7 @@ export default function UserIndex({ admins, users }: any) {
                         <div className="relative w-full max-w-lg">
                             <input
                                 type="text"
-                                placeholder="Search users..."
+                                placeholder="Cari pengguna..."
                                 className="w-full pl-6 pr-12 py-3.5 rounded-xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-[#1a432d]/20 focus:border-[#1a432d] outline-none text-slate-500 transition-all bg-white"
                             />
                             <Search className="absolute right-4 top-3.5 text-slate-400" size={22} />
@@ -100,7 +99,7 @@ export default function UserIndex({ admins, users }: any) {
                             onClick={openAddModal}
                             className="bg-[#1a432d] hover:bg-[#143524] text-white px-8 py-3.5 rounded-xl flex items-center gap-3 font-bold shadow-md transition-all active:scale-95 text-lg"
                         >
-                            <Plus size={24} strokeWidth={3} /> Add
+                            <Plus size={24} strokeWidth={3} /> Tambah Pengguna
                         </button>
                     </div>
 
@@ -116,7 +115,6 @@ export default function UserIndex({ admins, users }: any) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm">
-                                {/* BARIS ADMIN */}
                                 {admins.map((admin: any, index: number) => (
                                     <tr key={admin.id} className="hover:bg-blue-50/20 transition-colors bg-blue-50/5">
                                         <td className="px-6 py-5 text-center text-blue-500 font-bold">{index + 1}</td>
@@ -139,13 +137,9 @@ export default function UserIndex({ admins, users }: any) {
                                         </td>
                                     </tr>
                                 ))}
-
-                                {/* BARIS USER */}
                                 {users.data.map((user: any, index: number) => (
                                     <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-5 text-center text-slate-500 font-medium">
-                                            {admins.length + (index + 1)}
-                                        </td>
+                                        <td className="px-6 py-5 text-center text-slate-500 font-medium">{admins.length + (index + 1)}</td>
                                         <td className="px-6 py-5 text-slate-700 font-semibold">{user.username}</td>
                                         <td className="px-6 py-5 text-slate-600 font-medium">{user.email}</td>
                                         <td className="px-6 py-5 text-center">
@@ -162,45 +156,60 @@ export default function UserIndex({ admins, users }: any) {
                 </main>
             </div>
 
-            {/* --- MODAL TAMBAH ADMIN (GREEN THEME) --- */}
+            {/* --- MODAL TAMBAH PENGGUNA --- */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                    <div className="bg-white w-full max-w-3xl rounded-[20px] shadow-2xl overflow-hidden relative border border-white/20">
-                        <div className="flex justify-between items-center px-8 py-5 border-b border-slate-100 bg-slate-50/50">
-                            <h2 className="text-xl font-bold text-[#1a432d]">Tambah Admin Baru</h2>
-                            <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-rose-500"><X size={24} /></button>
+                    <div className="bg-white w-full max-w-2xl rounded-[30px] shadow-2xl overflow-hidden relative border border-white/20">
+                        <div className="flex justify-between items-center px-10 py-6 border-b border-slate-100 bg-[#f8fafc]">
+                            <div className="flex items-center gap-3 text-[#1a432d]">
+                                <div className="p-2 bg-[#1a432d]/10 rounded-lg text-[#1a432d]">
+                                    <UserPlus size={24} />
+                                </div>
+                                <h2 className="text-2xl font-black italic tracking-tight uppercase">Tambah Pengguna</h2>
+                            </div>
+                            <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-rose-500 transition-colors"><X size={28} /></button>
                         </div>
-                        <form onSubmit={handleStore} className="p-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <form onSubmit={handleStore} className="p-10">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700">Username</label>
-                                    <input type="text" value={data.username} onChange={e => setData('username', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#1a432d] outline-none transition-all" required />
-                                    {errors.username && <p className="text-red-500 text-xs">{errors.username}</p>}
+                                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Username</label>
+                                    <input type="text" value={data.username} onChange={e => setData('username', e.target.value)} placeholder="Username" className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:border-[#1a432d] focus:ring-4 focus:ring-[#1a432d]/5 outline-none transition-all font-bold text-slate-700" required />
+                                    {errors.username && <p className="text-red-500 text-xs mt-1 font-bold italic">{errors.username}</p>}
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700">Email</label>
-                                    <input type="email" value={data.email} onChange={e => setData('email', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#1a432d] outline-none transition-all" required />
-                                    {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
+                                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Email</label>
+                                    <input type="email" value={data.email} onChange={e => setData('email', e.target.value)} placeholder="Email" className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:border-[#1a432d] focus:ring-4 focus:ring-[#1a432d]/5 outline-none transition-all font-bold text-slate-700" required />
+                                    {errors.email && <p className="text-red-500 text-xs mt-1 font-bold italic">{errors.email}</p>}
+                                </div>
+                                <div className="space-y-2 relative">
+                                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Password</label>
+                                    <div className="relative">
+                                        <input type={showPassword ? "text" : "password"} value={data.password} onChange={e => setData('password', e.target.value)} placeholder="••••••••" className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:border-[#1a432d] focus:ring-4 focus:ring-[#1a432d]/5 outline-none transition-all font-bold text-slate-700" required />
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-4 text-slate-400">
+                                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700">Password</label>
-                                    <input type="password" value={data.password} onChange={e => setData('password', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#1a432d] outline-none transition-all" required />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700">Konfirmasi Password</label>
-                                    <input type="password" value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#1a432d] outline-none transition-all" required />
+                                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Konfirmasi</label>
+                                    <input type={showPassword ? "text" : "password"} value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value)} placeholder="Konfirmasi" className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:border-[#1a432d] outline-none transition-all font-bold" required />
                                 </div>
                             </div>
-                            <div className="flex justify-end gap-4 mt-10">
-                                <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-8 py-2.5 rounded-lg bg-slate-400 text-white font-bold italic">Batal</button>
-                                <button type="submit" disabled={processing} className="px-8 py-2.5 rounded-lg bg-[#1a432d] text-white font-bold italic shadow-md">Simpan Admin</button>
+                            
+                            <div className="flex justify-end gap-4 mt-12 pt-6 border-t border-slate-50">
+                                <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-8 py-4 rounded-2xl bg-slate-100 text-slate-500 font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-all">Batal</button>
+                                <button type="submit" disabled={processing} className="px-10 py-4 rounded-2xl bg-[#1a432d] text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-[#1a432d]/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+                                    {processing ? 'Menyimpan...' : 'Simpan Pengguna'}
+                                    <Sparkles size={14} fill="white" />
+                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* --- MODAL EDIT PENGGUNA (ORANGE THEME) --- */}
+            {/* MODAL EDIT */}
             {isEditModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                     <div className="bg-white w-full max-w-3xl rounded-[20px] shadow-2xl overflow-hidden relative border border-white/20">
@@ -234,35 +243,27 @@ export default function UserIndex({ admins, users }: any) {
                             </div>
                             <div className="flex justify-end gap-4 mt-10">
                                 <button type="button" onClick={() => { setIsEditModalOpen(false); setSelectedUser(null); }} className="px-8 py-2.5 rounded-lg bg-slate-400 text-white font-bold italic">Batal</button>
-                                <button type="submit" disabled={processing} className="px-8 py-2.5 rounded-lg bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold italic shadow-md active:scale-95">Simpan Perubahan</button>
+                                <button type="submit" disabled={processing} className="px-8 py-2.5 rounded-lg bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold italic shadow-md">Simpan Perubahan</button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* MODAL HAPUS (TAMBAHAN SESUAI PERMINTAAN) */}
+            {/* MODAL HAPUS */}
             {isDeleteModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-fade-in p-4">
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden animate-slide-up p-10">
-                        <div className="flex flex-col items-center text-center">
-                            <div className="relative mb-6">
-                                <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center text-[#CC2014]">
-                                    <Trash2 size={48} strokeWidth={1.5} />
-                                </div>
-                                <Sparkles size={16} className="absolute -top-1 -right-1 text-red-300 fill-red-300" />
-                            </div>
-                            <h3 className="text-2xl font-black text-slate-900 mb-3">Hapus Data?</h3>
-                            <p className="text-slate-500 font-medium leading-relaxed mb-10">
-                                Data <span className="text-slate-900 font-bold">"{selectedUser?.username}"</span> akan dihapus secara <span className="text-red-500 font-bold text-sm">permanen.</span>
-                            </p>
-                            <div className="flex gap-4 w-full px-2">
-                                <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-4 px-6 rounded-full bg-[#a3b1c6] text-white font-bold hover:bg-slate-500 transition-all active:scale-95">Batal</button>
-                                <button onClick={handleDelete} className="flex-1 py-4 px-6 rounded-full bg-[#CC2014] text-white font-bold hover:bg-red-700 transition-all active:scale-95 flex items-center justify-center gap-2">
-                                    <span>Hapus</span>
-                                    <Sparkles size={12} fill="currentColor" className="opacity-80" />
-                                </button>
-                            </div>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-sm overflow-hidden p-10 text-center">
+                        <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center text-[#CC2014] mx-auto mb-6">
+                            <Trash2 size={48} strokeWidth={1.5} />
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-900 mb-3">Hapus Data?</h3>
+                        <p className="text-slate-500 font-medium leading-relaxed mb-10">
+                            Data <span className="text-slate-900 font-bold">"{selectedUser?.username}"</span> akan dihapus secara permanen.
+                        </p>
+                        <div className="flex gap-4 w-full">
+                            <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-4 px-6 rounded-full bg-[#a3b1c6] text-white font-bold hover:bg-slate-500 transition-all">Batal</button>
+                            <button onClick={handleDelete} className="flex-1 py-4 px-6 rounded-full bg-[#CC2014] text-white font-bold hover:bg-red-700 transition-all">Hapus</button>
                         </div>
                     </div>
                 </div>
