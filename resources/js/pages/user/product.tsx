@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 export default function ProductPage() {
-    // Ambil data dari backend (menambahkan savedIds untuk status bookmark)
+    // Ambil data dari backend
     const { auth, products, categories, filters, savedIds = [] } = usePage().props as any;
 
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -25,7 +25,6 @@ export default function ProductPage() {
 
     // --- FITUR SEARCH & FILTER REAL-TIME ---
     const performSearch = useCallback((query: string, category?: string) => {
-        // Gunakan category dari parameter atau dari filter yang sedang aktif
         const activeCategory = category !== undefined ? category : (filters?.category || '');
         
         router.get('/products', 
@@ -61,7 +60,17 @@ export default function ProductPage() {
         performSearch(searchQuery);
     };
 
-    // --- FITUR SAVE/BOOKMARK (Backend Sync) ---
+    // --- LOGIKA PROTEKSI AKSES (PENTING) ---
+    const handleCardClick = (e: React.MouseEvent) => {
+        // Jika user belum login, batalkan navigasi dan tampilkan modal
+        if (!auth.user) {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowAuthModal(true);
+        }
+    };
+
+    // --- FITUR SAVE/BOOKMARK ---
     const handleToggleSave = (e: React.MouseEvent, productId: number) => {
         e.preventDefault();
         e.stopPropagation();
@@ -71,7 +80,6 @@ export default function ProductPage() {
             return;
         }
 
-        // Tembak ke route post untuk simpan/hapus bookmark
         router.post(`/products/${productId}/save`, {}, {
             preserveScroll: true,
         });
@@ -180,7 +188,7 @@ export default function ProductPage() {
                                             key={item}
                                             type="button"
                                             onClick={() => handleCategorySelect(item)}
-                                            className={`w-full text-left px-6 py-3 text-sm font-black transition-colors ${selectedCategory === item ? 'text-emerald-600 bg-emerald-50' : 'text-slate-600 hover:bg-slate-50'}`}
+                                            className={`w-full text-left px-6 py-3 text-sm font-black transition-colors border-none bg-transparent cursor-pointer ${selectedCategory === item ? 'text-emerald-600 bg-emerald-50' : 'text-slate-600 hover:bg-slate-50'}`}
                                         >
                                             {item}
                                         </button>
@@ -189,14 +197,14 @@ export default function ProductPage() {
                             )}
                         </div>
 
-                        <button type="submit" className="px-10 py-4 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 transition-all shadow-lg">
+                        <button type="submit" className="px-10 py-4 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 transition-all shadow-lg border-none cursor-pointer">
                             Cari
                         </button>
                     </div>
                 </form>
             </div>
 
-            {/* HASIL PENCARIAN */}
+            {/* PRODUCT GRID */}
             <main className="max-w-7xl mx-auto px-8 py-20">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                     {dataProduk.length > 0 ? dataProduk.map((product: any) => {
@@ -206,25 +214,35 @@ export default function ProductPage() {
                             <Link 
                                 href={`/products/${product.id}`} 
                                 key={product.id} 
-                                className="group bg-white rounded-[1.5rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
+                                onClick={handleCardClick} // <--- PERBAIKAN: Fungsi proteksi di sini
+                                className="group bg-white rounded-[2rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col no-underline"
                             >
-                                <div className="relative h-60 overflow-hidden">
+                                <div className="relative h-64 overflow-hidden">
                                     <img 
                                         src={product.gambar ? `/storage/${product.gambar}` : '/images/default.jpg'} 
-                                        className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-700`} 
+                                        className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ${!auth.user ? 'blur-md' : ''}`} 
                                         alt={product.nama_produk} 
                                     />
                                     
                                     <button 
                                         onClick={(e) => handleToggleSave(e, product.id)}
-                                        className={`absolute top-4 right-4 p-2 rounded-lg shadow-md transition-all z-10 border-none cursor-pointer ${
+                                        className={`absolute top-4 right-4 p-2.5 rounded-xl shadow-lg transition-all z-20 border-none cursor-pointer ${
                                             isSaved 
                                             ? 'bg-emerald-600 text-white' 
-                                            : 'bg-white/90 text-[#1a432d] hover:bg-emerald-50'
+                                            : 'bg-white/90 text-[#1a432d] hover:bg-white'
                                         }`}
                                     >
-                                        <Bookmark size={16} className={isSaved ? "fill-current" : ""} />
+                                        <Bookmark size={18} className={isSaved ? "fill-current" : ""} />
                                     </button>
+
+                                    {/* Overlay Gembok jika belum login */}
+                                    {!auth.user && (
+                                        <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/5">
+                                            <div className="bg-white/90 p-4 rounded-full shadow-lg transform group-hover:scale-110 transition-transform">
+                                                <Lock size={28} className="text-emerald-700" />
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="absolute bottom-4 left-4 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-md tracking-tighter uppercase z-10">
                                         {product.kategori?.nama_kategori || product.kategori || 'Properti'}
@@ -240,9 +258,16 @@ export default function ProductPage() {
                                     </p>
 
                                     <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
-                                        <span className="text-emerald-700 font-black text-lg">
-                                            {formatIDR(product.harga)}
-                                        </span>
+                                        <div className="flex flex-col">
+                                            <span className="text-emerald-700 font-black text-lg">
+                                                {formatIDR(product.harga)}
+                                            </span>
+                                            {!auth.user && (
+                                                <span className="text-[9px] text-rose-500 font-bold uppercase mt-1 animate-pulse">
+                                                    Login untuk Detail
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="bg-emerald-50 p-3 rounded-xl text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all">
                                             <ArrowRight size={20} />
                                         </div>
@@ -258,17 +283,47 @@ export default function ProductPage() {
                 </div>
             </main>
             
-            {/* MODAL AUTH */}
+            {/* MODAL AUTH (PIXEL PERFECT SESUAI REFERENSI) */}
             {showAuthModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-[#1a432d]/60 backdrop-blur-md" onClick={() => setShowAuthModal(false)} />
-                    <div className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl text-center">
-                        <Lock size={40} className="text-emerald-600 mx-auto mb-6" />
-                        <h3 className="text-2xl font-black text-[#1a432d] mb-3">Login Dulu Yuk!</h3>
-                        <p className="text-slate-500 text-sm mb-8">Masuk ke akunmu untuk menyimpan properti impian.</p>
-                        <div className="grid grid-cols-1 gap-3">
-                            <Link href="/login" className="bg-[#1a432d] text-white font-bold py-4 rounded-2xl hover:bg-emerald-800 transition-all no-underline">Masuk Sekarang</Link>
-                            <button onClick={() => setShowAuthModal(false)} className="text-slate-400 text-xs font-bold uppercase bg-transparent border-none cursor-pointer">Nanti Saja</button>
+                    <div 
+                        className="absolute inset-0 bg-[#1a432d]/40 backdrop-blur-sm animate-in fade-in duration-300" 
+                        onClick={() => setShowAuthModal(false)} 
+                    />
+                    
+                    <div className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in slide-in-from-bottom-8 duration-300 text-center overflow-hidden">
+                        {/* Icon Lock Hijau Muda */}
+                        <div className="w-20 h-20 bg-[#e6f7ef] rounded-[1.8rem] flex items-center justify-center mx-auto mb-8 shadow-sm">
+                            <Lock size={42} className="text-[#00b96b]" strokeWidth={2.5} />
+                        </div>
+
+                        {/* Text */}
+                        <h3 className="text-2xl font-black text-[#1a432d] mb-4 tracking-tight">Satu Langkah Lagi!</h3>
+                        <p className="text-slate-500 text-[13px] leading-relaxed mb-10 px-2 font-medium">
+                            Bergabunglah dengan <span className="text-[#00b96b] font-bold">PropertyKu</span> untuk melihat detail properti, lokasi tepatnya, dan melakukan simulasi cicilan.
+                        </p>
+                        
+                        {/* Buttons */}
+                        <div className="flex flex-col gap-3.5">
+                            <Link 
+                                href="/login" 
+                                className="bg-[#1a432d] text-white font-bold py-4.5 rounded-2xl hover:bg-[#143524] transition-all no-underline shadow-lg text-[15px]"
+                            >
+                                Masuk ke Akun
+                            </Link>
+                            <Link 
+                                href="/register" 
+                                className="bg-[#00b96b] text-white font-bold py-4.5 rounded-2xl hover:bg-[#00a35e] transition-all no-underline shadow-lg shadow-emerald-500/20 text-[15px]"
+                            >
+                                Daftar Gratis
+                            </Link>
+                            
+                            <button 
+                                onClick={() => setShowAuthModal(false)} 
+                                className="mt-5 text-slate-400 text-[10px] font-bold uppercase tracking-[0.25em] bg-transparent border-none cursor-pointer hover:text-slate-600 transition-colors"
+                            >
+                                NANTI SAJA
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -278,11 +333,6 @@ export default function ProductPage() {
             <footer className="bg-slate-900 py-12 text-center">
                 <div className="max-w-7xl mx-auto px-8">
                     <img src="/images/logo.png" alt="Logo" className="h-8 w-auto mx-auto mb-4 brightness-0 invert opacity-50" />
-                    <div className="flex justify-center gap-6 mb-6">
-                        <Link href="/products" className="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Properti</Link>
-                        <Link href="/simulator-kpr" className="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">KPR</Link>
-                        <Link href="/login" className="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Login</Link>
-                    </div>
                     <p className="text-slate-600 text-[9px] font-bold uppercase tracking-[0.2em]">&copy; 2026 PropertyKu. All rights reserved.</p>
                 </div>
             </footer>
