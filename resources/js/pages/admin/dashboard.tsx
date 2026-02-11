@@ -1,6 +1,5 @@
 import AppLayout from '@/layouts/app-layout';
-import StatCard from '@/components/StatCard';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import type { BreadcrumbItem } from '@/types';
 import { 
     Home, 
@@ -8,135 +7,141 @@ import {
     Users, 
     LayoutGrid, 
     TrendingUp, 
-    ChevronRight 
+    ArrowRight,
+    Building2
 } from 'lucide-react';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/admin/dashboard' }];
 
-// Data Dummy Kategori dengan format yang lebih lengkap untuk estetika
-const topCategories = [
-    { 
-        name: 'Rumah Subsidi', sold: 124, revenue: 'Rp18M', growth: '+12%', 
-        colorClass: 'text-blue-600', bgClass: 'bg-blue-50', borderClass: 'border-blue-100' 
-    },
-    { 
-        name: 'Rumah Komersial', sold: 42, revenue: 'Rp42M', growth: '+8%', 
-        colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', borderClass: 'border-emerald-100' 
-    },
-    { 
-        name: 'Ruko & Niaga', sold: 12, revenue: 'Rp15M', growth: '+2%', 
-        colorClass: 'text-amber-600', bgClass: 'bg-amber-50', borderClass: 'border-amber-100' 
-    },
-    { 
-        name: 'Tanah Kavling', sold: 8, revenue: 'Rp4M', growth: '-1%', 
-        colorClass: 'text-rose-600', bgClass: 'bg-rose-50', borderClass: 'border-rose-100' 
-    },
-];
+interface DashboardProps {
+    stats?: { properti_terjual: number; total_ulasan: number; pengguna_aktif: number; };
+    top_categories?: Array<{ name: string; sold: number; revenue: string; url: string; }>;
+}
 
-export default function Dashboard() {
+export default function Dashboard({ 
+    stats = { properti_terjual: 0, total_ulasan: 0, pengguna_aktif: 0 }, 
+    top_categories = [] 
+}: DashboardProps) {
+
+    const getCategoryTheme = (name: string) => {
+        const n = name.toLowerCase();
+        if (n.includes('subsidi')) return 'text-blue-600 bg-blue-50';
+        if (n.includes('komersial')) return 'text-emerald-600 bg-emerald-50';
+        if (n.includes('ruko') || n.includes('bisnis')) return 'text-amber-600 bg-amber-50';
+        return 'text-[#1A4D2E] bg-slate-50';
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Dashboard" />
+            <Head title="Admin Dashboard" />
 
-            <div className="mx-auto max-w-7xl px-6 py-8">
-                {/* HEADER - Lebih Clean */}
-                <section className="mb-8">
-                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-                        Selamat Datang, Admin 👋
-                    </h1>
-                    <p className="mt-2 text-slate-500">
-                        Berikut adalah ringkasan performa <span className="font-semibold text-[#1A4D2E]">PropertyKu</span> hari ini.
-                    </p>
-                </section>
+            <div className="mx-auto max-w-7xl px-6 py-10">
+                {/* HEADER SECTION */}
+                <div className="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard Ringkasan</h1>
+                        <p className="text-slate-500 mt-1">Pantau statistik <span className="text-[#1A4D2E] font-semibold">PropertyKu</span> Anda secara real-time.</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm w-fit">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Sistem Aktif
+                    </div>
+                </div>
 
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-                    {/* KOLOM KIRI */}
-                    <div className="lg:col-span-3 space-y-8">
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-6">
+                    <div className="lg:col-span-4 space-y-8">
                         
-                        {/* 1. STAT CARDS - Terpusat & Berwarna */}
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                            <div className="group rounded-2xl border border-blue-100 bg-white p-6 shadow-sm transition-all hover:shadow-md">
-                                <div className="flex flex-col items-center text-center">
-                                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition-transform group-hover:scale-110">
-                                        <LayoutGrid size={24} />
-                                    </div>
-                                    <p className="text-sm font-medium text-slate-500">Properti Terjual</p>
-                                    <h3 className="mt-1 text-2xl font-bold text-slate-900">18 Unit</h3>
+                        {/* STAT CARDS (BAGIAN YANG LU MAKSUD) */}
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                            {/* Properti Link */}
+                            <Link href="/produk" className="group bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-[#1A4D2E] flex items-center justify-center mb-4 group-hover:bg-[#1A4D2E] group-hover:text-white transition-colors">
+                                    <Building2 size={24} />
                                 </div>
-                            </div>
+                                <p className="text-sm font-medium text-slate-500">Total Properti</p>
+                                <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.properti_terjual}</h3>
+                                <div className="mt-4 flex items-center text-[11px] font-bold text-[#1A4D2E] uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Kelola Data <ArrowRight size={12} className="ml-1"/>
+                                </div>
+                            </Link>
 
-                            <div className="group rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm transition-all hover:shadow-md">
-                                <div className="flex flex-col items-center text-center">
-                                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition-transform group-hover:scale-110">
-                                        <MessageSquare size={24} />
-                                    </div>
-                                    <p className="text-sm font-medium text-slate-500">Total Ulasan</p>
-                                    <h3 className="mt-1 text-2xl font-bold text-slate-900">260</h3>
+                            {/* Ulasan Link */}
+                            <Link href="/ulasan" className="group bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                                    <MessageSquare size={24} />
                                 </div>
-                            </div>
+                                <p className="text-sm font-medium text-slate-500">Total Ulasan</p>
+                                <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.total_ulasan}</h3>
+                                <div className="mt-4 flex items-center text-[11px] font-bold text-amber-600 uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Lihat Feedback <ArrowRight size={12} className="ml-1"/>
+                                </div>
+                            </Link>
 
-                            <div className="group rounded-2xl border border-purple-100 bg-white p-6 shadow-sm transition-all hover:shadow-md">
-                                <div className="flex flex-col items-center text-center">
-                                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 text-purple-600 transition-transform group-hover:scale-110">
-                                        <Users size={24} />
-                                    </div>
-                                    <p className="text-sm font-medium text-slate-500">Pengguna Aktif</p>
-                                    <h3 className="mt-1 text-2xl font-bold text-slate-900">1.2k</h3>
+                            {/* Pengguna Link */}
+                            <Link href="/pengguna" className="group bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                                <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <Users size={24} />
                                 </div>
-                            </div>
+                                <p className="text-sm font-medium text-slate-500">Pengguna</p>
+                                <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats.pengguna_aktif}</h3>
+                                <div className="mt-4 flex items-center text-[11px] font-bold text-blue-600 uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Manajemen User <ArrowRight size={12} className="ml-1"/>
+                                </div>
+                            </Link>
                         </div>
 
-                        {/* 2. KATEGORI TERLARIS - Lebih Estetik */}
-                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4">
-                                <div className="flex items-center gap-2">
-                                    <TrendingUp size={18} className="text-[#1A4D2E]" />
-                                    <h2 className="font-bold text-slate-800">Performa Kategori Terlaris</h2>
+                        {/* KATEGORI SECTION (YANG UDAH BISA) */}
+                        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                            <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-slate-50 rounded-lg text-slate-400">
+                                        <TrendingUp size={20} />
+                                    </div>
+                                    <h2 className="font-bold text-slate-800 text-lg">Kategori Terpopuler</h2>
                                 </div>
-                                <button className="text-xs font-semibold text-[#1A4D2E] hover:underline">
-                                    Lihat Semua
-                                </button>
+                                <Link href="/kategori" className="text-sm font-semibold text-[#1A4D2E] hover:underline">Lihat Semua</Link>
                             </div>
-
                             <div className="p-6">
-                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                    {topCategories.map((cat, idx) => (
-                                        <div 
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {top_categories.map((cat, idx) => (
+                                        <Link 
                                             key={idx} 
-                                            className={`group flex items-center justify-between rounded-xl border p-4 transition-all hover:bg-slate-50 ${cat.borderClass}`}
+                                            href={cat.url || '#'} 
+                                            className="flex items-center justify-between p-4 rounded-2xl border border-slate-50 bg-slate-50/30 hover:bg-white hover:border-[#1A4D2E]/20 hover:shadow-md transition-all group"
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className={`flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${cat.bgClass} ${cat.colorClass}`}>
-                                                    <Home size={22} strokeWidth={2.5} />
+                                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shadow-sm ${getCategoryTheme(cat.name)}`}>
+                                                    <Home size={18} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-slate-800">{cat.name}</p>
-                                                    <p className="text-[11px] font-medium text-slate-500">{cat.sold} Unit Terjual</p>
+                                                    <h4 className="font-bold text-slate-800 text-sm uppercase tracking-tight">{cat.name}</h4>
+                                                    <p className="text-[11px] text-slate-500 font-medium">{cat.sold} Unit Terdaftar</p>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-sm font-bold text-slate-700">{cat.revenue}</p>
-                                                <span className={`text-[10px] font-bold ${cat.growth.startsWith('+') ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                    {cat.growth}
-                                                </span>
+                                            <div className="text-[10px] text-[#1A4D2E] font-bold uppercase group-hover:underline">
+                                                {cat.revenue}
                                             </div>
-                                        </div>
+                                        </Link>
                                     ))}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* KOLOM KANAN (Opsional untuk aktivitas atau info tambahan) */}
+                    {/* SIDEBAR CTA */}
                     <div className="lg:col-span-2">
-                        <div className="rounded-2xl border border-slate-200 bg-[#1A4D2E] p-6 text-white shadow-lg">
-                            <h3 className="text-lg font-bold">Tips Hari Ini 💡</h3>
-                            <p className="mt-2 text-sm text-green-100 leading-relaxed">
-                                Pastikan ulasan pelanggan segera dibalas untuk meningkatkan kepercayaan calon pembeli properti Anda!
-                            </p>
-                            <button className="mt-4 flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-xs font-semibold transition-hover hover:bg-white/20">
-                                Pelajari Lanjut <ChevronRight size={14} />
-                            </button>
+                        <div className="bg-[#1A4D2E] rounded-3xl p-8 text-white relative overflow-hidden shadow-lg shadow-emerald-900/20">
+                            <div className="relative z-10">
+                                <h3 className="text-xl font-bold leading-tight">Butuh Tambah<br/>Unit Baru?</h3>
+                                <p className="text-emerald-100/80 text-sm mt-3">Tambahkan listing properti terbaru Anda sekarang.</p>
+                                <Link href="/produk/create" className="mt-8 flex items-center justify-center gap-2 bg-white text-[#1A4D2E] font-bold py-3 rounded-2xl hover:bg-emerald-50 transition-colors shadow-xl shadow-black/10">
+                                    <LayoutGrid size={18} />
+                                    Tambah Properti
+                                </Link>
+                                <Link href="/ulasan" className="mt-4 flex items-center justify-center gap-2 bg-white/10 text-white font-semibold py-3 rounded-2xl hover:bg-white/20 transition-colors border border-white/10">
+                                    Cek Feedback User
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </div>

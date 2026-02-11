@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage; // <--- WAJIB TAMBAH INI
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -14,46 +14,19 @@ class UserController extends Controller
     {
         return Inertia::render('admin/pengguna/index', [
             'admins' => User::where('role', 'admin')
-                ->select('id', 'username', 'email', 'role')
-                ->latest()
+                // Tambahkan 'avatar' dan 'updated_at' agar admin bisa lihat foto & urutan terbaru
+                ->select('id', 'username', 'email', 'role', 'avatar', 'updated_at')
+                ->latest('updated_at') // Urutkan berdasarkan update terakhir
                 ->get(),
             
             'users' => User::where('role', 'user')
-                ->select('id', 'username', 'email', 'role')
-                ->latest()
+                ->select('id', 'username', 'email', 'role', 'avatar', 'updated_at')
+                ->latest('updated_at')
                 ->paginate(10)
         ]);
     }
 
-    /**
-     * Update Foto Profil (Fungsi yang tadi hilang)
-     */
-    public function updateAvatar(Request $request)
-    {
-        $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
-
-        $user = auth()->user();
-
-        // Hapus foto lama jika ada di folder storage
-        if ($user->avatar) {
-            Storage::disk('public')->delete($user->avatar);
-        }
-
-        // Upload foto baru ke folder 'avatars'
-        if ($request->hasFile('avatar')) {
-            $path = $request->file('avatar')->store('avatars', 'public');
-            
-            // Update kolom avatar di database
-            $user->update([
-                'avatar' => $path
-            ]);
-        }
-
-        return redirect()->back()->with('message', 'Foto profil berhasil diperbarui!');
-    }
-
+    // Fungsi update profil (biasanya dipanggil oleh admin untuk edit user lain)
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -73,9 +46,30 @@ class UserController extends Controller
 
         $user->save();
 
-        return redirect()->back()->with('message', 'Data berhasil diperbarui!');
+        return redirect()->back()->with('message', 'Data pengguna berhasil diperbarui!');
     }
 
+    // Fungsi updateAvatar (Sudah oke, pastikan ProfileController juga pakai logika yang sama)
+    public function updateAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $user = auth()->user();
+
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->update(['avatar' => $path]);
+        }
+
+        return redirect()->back()->with('message', 'Foto profil berhasil diperbarui!');
+    }
+
+    // ... fungsi store dan destroy tetap sama ...
     public function store(Request $request)
     {
         $request->validate([
@@ -91,20 +85,16 @@ class UserController extends Controller
             'role'     => 'admin', 
         ]);
 
-        return redirect()->back()->with('message', 'Pengguna berhasil ditambahkan!');
+        return redirect()->back()->with('message', 'Admin baru berhasil ditambahkan!');
     }
 
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-        
-        // Opsional: Hapus juga foto profilnya saat user dihapus
         if ($user->avatar) {
             Storage::disk('public')->delete($user->avatar);
         }
-
         $user->delete();
-
         return redirect()->back()->with('message', 'Pengguna berhasil dihapus!');
     }
 }

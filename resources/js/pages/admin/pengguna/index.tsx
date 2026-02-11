@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { 
     Search, Plus, Edit, X, Eye, ShieldAlert, Mail, 
-    User as UserIcon, Calendar, Clock
+    User as UserIcon, Clock
 } from 'lucide-react'; 
 import Sidebar from '@/components/sidebar'; 
 import Header from '@/components/sidebar-header';
@@ -41,19 +41,28 @@ export default function UserIndex({ admins, users }: any) {
     
     const openEditModal = (user: any) => {
         setSelectedUser(user);
-        setData({ username: user.username, email: user.email, password: '', password_confirmation: '' });
+        setData({ 
+            username: user.username, 
+            email: user.email, 
+            password: '', 
+            password_confirmation: '' 
+        });
         setIsEditModalOpen(true);
     };
 
     const handleStore = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/pengguna', { onSuccess: () => { setIsAddModalOpen(false); reset(); } });
+        post('/pengguna', { 
+            onSuccess: () => { setIsAddModalOpen(false); reset(); } 
+        });
     };
 
     const handleUpdate = (e: React.FormEvent) => {
         e.preventDefault();
         if (selectedUser) {
-            put(`/pengguna/${selectedUser.id}`, { onSuccess: () => { setIsEditModalOpen(false); setSelectedUser(null); reset(); } });
+            put(`/pengguna/${selectedUser.id}`, { 
+                onSuccess: () => { setIsEditModalOpen(false); setSelectedUser(null); reset(); } 
+            });
         }
     };
 
@@ -139,9 +148,9 @@ export default function UserIndex({ admins, users }: any) {
                         <div className="px-8 pb-10 relative">
                             <div className="flex justify-center -mt-20 mb-4">
                                 <div className="w-36 h-36 bg-white rounded-[2.5rem] shadow-xl flex items-center justify-center border-[10px] border-white overflow-hidden bg-slate-50">
-                                    {selectedUser?.foto ? (
+                                    {selectedUser?.avatar ? (
                                         <img 
-                                            src={`/storage/${selectedUser.foto}`} 
+                                            src={`/storage/${selectedUser.avatar}`} 
                                             alt={selectedUser.username} 
                                             className="w-full h-full object-cover"
                                             onError={(e: any) => {
@@ -163,6 +172,7 @@ export default function UserIndex({ admins, users }: any) {
                             </div>
 
                             <div className="space-y-3 text-left">
+                                {/* EMAIL */}
                                 <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                     <div className="p-2 bg-white rounded-lg text-slate-400 shadow-sm"><Mail size={18} /></div>
                                     <div>
@@ -171,14 +181,7 @@ export default function UserIndex({ admins, users }: any) {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                    <div className="p-2 bg-white rounded-lg text-slate-400 shadow-sm"><Calendar size={18} /></div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase">Member Sejak</p>
-                                        <p className="text-sm font-bold text-slate-700">{selectedUser?.created_at ? new Date(selectedUser.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</p>
-                                    </div>
-                                </div>
-
+                                {/* PEMBARUAN AKUN */}
                                 <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                     <div className="p-2 bg-white rounded-lg text-emerald-500 shadow-sm"><Clock size={18} /></div>
                                     <div>
@@ -187,6 +190,7 @@ export default function UserIndex({ admins, users }: any) {
                                     </div>
                                 </div>
 
+                                {/* KEAMANAN DATA */}
                                 <div className="mt-6 p-5 bg-amber-50 rounded-[1.5rem] border border-amber-100 flex gap-4 items-start">
                                     <div className="p-2 bg-amber-500 rounded-xl text-white shrink-0 shadow-lg">
                                         <ShieldAlert size={20} />
@@ -215,16 +219,24 @@ export default function UserIndex({ admins, users }: any) {
                         <form onSubmit={isAddModalOpen ? handleStore : handleUpdate} className="space-y-5">
                             <div>
                                 <label className="block text-[10px] font-black mb-1.5 uppercase tracking-[0.15em] text-slate-400">Username</label>
-                                <input value={data.username} onChange={e => setData('username', e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" required />
+                                <input value={data.username} onChange={e => setData('username', e.target.value)} className={`w-full p-4 bg-slate-50 border ${errors.username ? 'border-red-500' : 'border-slate-200'} rounded-xl outline-none`} required />
+                                {errors.username && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.username}</p>}
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black mb-1.5 uppercase tracking-[0.15em] text-slate-400">Email Address</label>
-                                <input type="email" value={data.email} onChange={e => setData('email', e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" required />
+                                <input type="email" value={data.email} onChange={e => setData('email', e.target.value)} className={`w-full p-4 bg-slate-50 border ${errors.email ? 'border-red-500' : 'border-slate-200'} rounded-xl outline-none`} required />
+                                {errors.email && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.email}</p>}
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black mb-1.5 uppercase tracking-[0.15em] text-slate-400">Password {isEditModalOpen && '(Kosongkan jika tak ganti)'}</label>
-                                <input type="password" onChange={e => setData('password', e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                                <input type="password" value={data.password} onChange={e => setData('password', e.target.value)} className={`w-full p-4 bg-slate-50 border ${errors.password ? 'border-red-500' : 'border-slate-200'} rounded-xl outline-none`} />
+                                {errors.password && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.password}</p>}
                             </div>
+                            <div>
+                                <label className="block text-[10px] font-black mb-1.5 uppercase tracking-[0.15em] text-slate-400">Konfirmasi Password</label>
+                                <input type="password" value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Ulangi password" />
+                            </div>
+                            
                             <button type="submit" disabled={processing} className="w-full py-4 bg-[#1a432d] text-white rounded-xl font-black uppercase tracking-widest text-xs">
                                 {processing ? 'Memproses...' : 'Simpan Data'}
                             </button>
