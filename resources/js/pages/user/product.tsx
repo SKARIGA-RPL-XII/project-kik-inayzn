@@ -60,9 +60,8 @@ export default function ProductPage() {
         performSearch(searchQuery);
     };
 
-    // --- LOGIKA PROTEKSI AKSES (PENTING) ---
+    // --- LOGIKA PROTEKSI AKSES ---
     const handleCardClick = (e: React.MouseEvent) => {
-        // Jika user belum login, batalkan navigasi dan tampilkan modal
         if (!auth.user) {
             e.preventDefault();
             e.stopPropagation();
@@ -145,8 +144,8 @@ export default function ProductPage() {
                         </div>
                     ) : (
                         <div className="flex gap-6 items-center">
-                            <Link href="/login" className="font-bold text-sm hover:text-emerald-200">Login</Link>
-                            <Link href="/register" className="font-bold text-sm bg-emerald-500 px-4 py-2 rounded-xl hover:bg-emerald-400">Register</Link>
+                            <Link href="/login" className="font-bold text-sm hover:text-emerald-200 no-underline text-white">Login</Link>
+                            <Link href="/register" className="font-bold text-sm bg-emerald-500 px-4 py-2 rounded-xl hover:bg-emerald-400 no-underline text-white">Register</Link>
                         </div>
                     )}
                 </div>
@@ -176,7 +175,7 @@ export default function ProductPage() {
                             <button 
                                 type="button"
                                 onClick={() => setOpenDropdown(openDropdown === 'category' ? null : 'category')}
-                                className="flex items-center gap-3 px-6 py-4 bg-slate-100 rounded-2xl font-black text-[#1a432d] hover:bg-slate-200 transition-all justify-center w-full min-w-[180px]"
+                                className="flex items-center gap-3 px-6 py-4 bg-slate-100 rounded-2xl font-black text-[#1a432d] hover:bg-slate-200 transition-all justify-center w-full min-w-[180px] border-none"
                             >
                                 <Filter size={18} /> {selectedCategory} <ChevronDown size={16} />
                             </button>
@@ -210,18 +209,34 @@ export default function ProductPage() {
                     {dataProduk.length > 0 ? dataProduk.map((product: any) => {
                         const isSaved = savedIds.includes(product.id);
                         
+                        // --- PERBAIKAN LOGIKA GAMBAR ---
+                        let firstImage = null;
+                        if (product.gambar) {
+                            if (Array.isArray(product.gambar)) {
+                                firstImage = product.gambar[0];
+                            } else if (typeof product.gambar === 'string') {
+                                firstImage = product.gambar.split(',')[0];
+                            }
+                        }
+                        const imageUrl = firstImage ? `/storage/${firstImage}` : '/images/default.jpg';
+                        // -------------------------------
+
                         return (
                             <Link 
                                 href={`/products/${product.id}`} 
                                 key={product.id} 
-                                onClick={handleCardClick} // <--- PERBAIKAN: Fungsi proteksi di sini
+                                onClick={handleCardClick}
                                 className="group bg-white rounded-[2rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col no-underline"
                             >
                                 <div className="relative h-64 overflow-hidden">
                                     <img 
-                                        src={product.gambar ? `/storage/${product.gambar}` : '/images/default.jpg'} 
+                                        src={imageUrl} 
                                         className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ${!auth.user ? 'blur-md' : ''}`} 
                                         alt={product.nama_produk} 
+                                        onError={(e: any) => {
+                                            e.target.onerror = null; 
+                                            e.target.src = '/images/default.jpg';
+                                        }}
                                     />
                                     
                                     <button 
@@ -235,7 +250,6 @@ export default function ProductPage() {
                                         <Bookmark size={18} className={isSaved ? "fill-current" : ""} />
                                     </button>
 
-                                    {/* Overlay Gembok jika belum login */}
                                     {!auth.user && (
                                         <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/5">
                                             <div className="bg-white/90 p-4 rounded-full shadow-lg transform group-hover:scale-110 transition-transform">
@@ -245,7 +259,7 @@ export default function ProductPage() {
                                     )}
 
                                     <div className="absolute bottom-4 left-4 bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-md tracking-tighter uppercase z-10">
-                                        {product.kategori?.nama_kategori || product.kategori || 'Properti'}
+                                        {product.kategori?.nama_kategori || (typeof product.kategori === 'string' ? product.kategori : 'Properti')}
                                     </div>
                                 </div>
 
@@ -283,37 +297,34 @@ export default function ProductPage() {
                 </div>
             </main>
             
-            {/* MODAL AUTH (PIXEL PERFECT SESUAI REFERENSI) */}
+            {/* MODAL AUTH */}
             {showAuthModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div 
-                        className="absolute inset-0 bg-[#1a432d]/40 backdrop-blur-sm animate-in fade-in duration-300" 
+                        className="absolute inset-0 bg-[#1a432d]/40 backdrop-blur-sm" 
                         onClick={() => setShowAuthModal(false)} 
                     />
                     
-                    <div className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in slide-in-from-bottom-8 duration-300 text-center overflow-hidden">
-                        {/* Icon Lock Hijau Muda */}
+                    <div className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl text-center overflow-hidden">
                         <div className="w-20 h-20 bg-[#e6f7ef] rounded-[1.8rem] flex items-center justify-center mx-auto mb-8 shadow-sm">
                             <Lock size={42} className="text-[#00b96b]" strokeWidth={2.5} />
                         </div>
 
-                        {/* Text */}
                         <h3 className="text-2xl font-black text-[#1a432d] mb-4 tracking-tight">Satu Langkah Lagi!</h3>
                         <p className="text-slate-500 text-[13px] leading-relaxed mb-10 px-2 font-medium">
                             Bergabunglah dengan <span className="text-[#00b96b] font-bold">PropertyKu</span> untuk melihat detail properti, lokasi tepatnya, dan melakukan simulasi cicilan.
                         </p>
                         
-                        {/* Buttons */}
                         <div className="flex flex-col gap-3.5">
                             <Link 
                                 href="/login" 
-                                className="bg-[#1a432d] text-white font-bold py-4.5 rounded-2xl hover:bg-[#143524] transition-all no-underline shadow-lg text-[15px]"
+                                className="bg-[#1a432d] text-white font-bold py-4 rounded-2xl hover:bg-[#143524] transition-all no-underline shadow-lg text-[15px] flex items-center justify-center"
                             >
                                 Masuk ke Akun
                             </Link>
                             <Link 
                                 href="/register" 
-                                className="bg-[#00b96b] text-white font-bold py-4.5 rounded-2xl hover:bg-[#00a35e] transition-all no-underline shadow-lg shadow-emerald-500/20 text-[15px]"
+                                className="bg-[#00b96b] text-white font-bold py-4 rounded-2xl hover:bg-[#00a35e] transition-all no-underline shadow-lg shadow-emerald-500/20 text-[15px] flex items-center justify-center"
                             >
                                 Daftar Gratis
                             </Link>

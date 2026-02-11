@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import { 
@@ -15,19 +14,21 @@ import {
     ArrowRight,
     Trash2,
     HeartOff,
-    Lock
+    Lock,
+    Compass // Ikon untuk Lokasi Strategis
 } from 'lucide-react';
 
-// 1. Definisi Type agar lebih aman (Type Safety)
+// 1. Interface dengan tambahan deskripsi
 interface Property {
     id: number;
     nama_produk: string;
+    deskripsi: string; 
     lokasi: string;
     harga: number;
     jumlah_kamar_tidur: number;
     jumlah_kamar_mandi: number;
     luas_bangunan: number;
-    gambar_url?: string; // Pastikan controller mengirimkan attribute ini atau path gambar
+    gambar_url?: string;
 }
 
 interface SavedItem {
@@ -51,13 +52,6 @@ export default function Simpan({ savedProperties }: { savedProperties: SavedItem
         }
     };
 
-    const handleCheckCollection = () => {
-        if (!auth.user) {
-            setShowAuthModal(true);
-        }
-    };
-
-    // 2. Fungsi Format Rupiah yang bersih
     const formatRupiah = (value: number) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -125,39 +119,46 @@ export default function Simpan({ savedProperties }: { savedProperties: SavedItem
                         {savedProperties.map((item) => (
                             <div key={item.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 group transition-all hover:-translate-y-2">
                                 <div className="relative h-60 overflow-hidden">
-                                    {/* 3. Logic Gambar: Menggunakan storage link Laravel */}
                                     <img 
                                         src={item.produk.gambar_url ? item.produk.gambar_url : '/images/placeholder-house.jpg'} 
                                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                                         alt={item.produk.nama_produk}
                                     />
-                                    {/* 4. Tombol Hapus: Mengirim POST request ke route save/unsave */}
                                     <Link 
                                         href={`/products/${item.produk_id}/save`} 
                                         method="post" 
                                         as="button"
                                         preserveScroll
-                                        className="absolute top-4 right-4 bg-white/20 backdrop-blur-md p-2 rounded-full text-white hover:bg-rose-500 transition-all border-none"
+                                        className="absolute top-4 right-4 bg-white/20 backdrop-blur-md p-2 rounded-full text-white hover:bg-rose-500 transition-all border-none cursor-pointer z-10"
                                     >
                                         <Trash2 size={18} />
                                     </Link>
                                 </div>
+
                                 <div className="p-8">
                                     <h3 className="text-xl font-black text-slate-800 mb-1 truncate">{item.produk.nama_produk}</h3>
                                     <p className="flex items-center gap-1 text-slate-400 text-sm mb-4">
-                                        <MapPin size={14} className="text-emerald-500" /> {item.produk.lokasi}
                                     </p>
-                                    <div className="flex justify-between items-center py-4 border-y border-slate-50 mb-6 font-bold text-slate-600 text-xs">
-                                        <span className="flex items-center gap-1.5"><BedDouble size={16} className="text-emerald-500" /> {item.produk.jumlah_kamar_tidur} KT</span>
-                                        <span className="flex items-center gap-1.5"><Bath size={16} className="text-emerald-500" /> {item.produk.jumlah_kamar_mandi} KM</span>
-                                        <span className="flex items-center gap-1.5"><Square size={16} className="text-emerald-500" /> {item.produk.luas_bangunan} m²</span>
+
+                                    {/* --- BAGIAN LOKASI STRATEGIS (DESKRIPSI) --- */}
+                                    <div className="flex items-start gap-3 bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/50 mb-6">
+                                        <div className="bg-emerald-500 p-1.5 rounded-lg text-white shrink-0 shadow-sm shadow-emerald-200">
+                                            <Compass size={14} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-0.5">Lokasi Strategis</p>
+                                            <p className="text-xs text-slate-600 leading-tight line-clamp-2 italic">
+                                                {item.produk.deskripsi || 'Akses mudah ke pusat kota dan fasilitas umum.'}
+                                            </p>
+                                        </div>
                                     </div>
+
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Harga</p>
                                             <p className="text-xl font-black text-emerald-600">{formatRupiah(item.produk.harga)}</p>
                                         </div>
-                                        <Link href={`/products/${item.produk_id}`} className="bg-slate-900 text-white p-3 rounded-2xl hover:bg-emerald-500 transition-all shadow-lg">
+                                        <Link href={`/products/${item.produk_id}`} className="bg-slate-900 text-white p-3 rounded-2xl hover:bg-emerald-500 transition-all shadow-lg active:scale-90">
                                             <ArrowRight size={20} />
                                         </Link>
                                     </div>
@@ -176,9 +177,8 @@ export default function Simpan({ savedProperties }: { savedProperties: SavedItem
                         <p className="text-slate-400 font-medium mb-8">
                             {auth.user ? "Cari properti idamanmu sekarang!" : "Silakan masuk untuk melihat properti yang sudah kamu simpan."}
                         </p>
-                        
                         <button 
-                            onClick={auth.user ? () => router.get('/products') : handleCheckCollection}
+                            onClick={auth.user ? () => router.get('/products') : () => setShowAuthModal(true)}
                             className="bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black hover:bg-emerald-600 transition-all inline-flex items-center gap-2 cursor-pointer border-none shadow-lg shadow-emerald-500/20"
                         >
                             {auth.user ? 'Mulai Cari' : 'Buka Koleksi'} <ArrowRight size={18} />

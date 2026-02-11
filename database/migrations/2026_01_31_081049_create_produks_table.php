@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('produks', function (Blueprint $table) {
@@ -19,13 +16,12 @@ return new class extends Migration
             $table->integer('stok');
             $table->enum('status', ['aktif', 'nonaktif'])->default('aktif');
             $table->text('deskripsi');
-            $table->string('gambar')->nullable();
+            $table->json('gambar')->nullable(); 
+            $table->string('no_agen')->nullable(); 
             $table->timestamps();
         });
     }
-    /**
-     * Reverse the migrations.
-     */
+
     public function down(): void
     {
         Schema::dropIfExists('produks');

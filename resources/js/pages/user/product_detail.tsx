@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head, Link, usePage, router } from '@inertiajs/react'; 
 import { 
     MessageCircle, 
@@ -7,7 +7,8 @@ import {
     Star,
     CornerDownRight,
     X,
-    Trash2 
+    Trash2,
+    Calculator 
 } from 'lucide-react';
 
 // --- INTERFACES ---
@@ -34,8 +35,10 @@ interface Product {
     stok: number;
     status: string;
     deskripsi: string | null;
-    gambar_url?: string;
+    gambar_url?: string; 
+    no_agen?: string; // DISESUAIKAN: Menggunakan no_agen dari Backend
     ulasans?: Review[]; 
+    product_images?: string[]; 
 }
 
 interface CustomPageProps {
@@ -48,11 +51,58 @@ export default function ProductDetail({ product }: { product: Product }) {
     const { props } = usePage();
     const { auth } = props as unknown as CustomPageProps;
     
+    // --- STATE UNTUK GALERI ---
+    const allImages = product.product_images && product.product_images.length > 0 
+        ? product.product_images 
+        : [product.gambar_url || "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800"];
+
+    const [activeImage, setActiveImage] = useState<string>(allImages[0]);
     const [comment, setComment] = useState<string>('');
     const [rating, setRating] = useState<number>(0); 
     const [hover, setHover] = useState<number>(0);   
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [replyTo, setReplyTo] = useState<{id: number, username: string} | null>(null);
+
+    // --- STATE & LOGIC KPR ---
+    const [tenor, setTenor] = useState<number>(15);
+    const [dpPercent, setDpPercent] = useState<number>(10);
+
+    const kpr = useMemo(() => {
+        const harga = Number(product?.harga || 0);
+        const uangMuka = harga * (dpPercent / 100);
+        const pokokPinjaman = harga - uangMuka;
+        const bungaPerTahun = 0.085; 
+        const bungaPerBulan = bungaPerTahun / 12;
+        const totalBulan = tenor * 12;
+        
+        const cicilan = pokokPinjaman * (bungaPerBulan * Math.pow(1 + bungaPerBulan, totalBulan)) / (Math.pow(1 + bungaPerBulan, totalBulan) - 1);
+
+        return {
+            uangMuka,
+            cicilan: isNaN(cicilan) ? 0 : cicilan
+        };
+    }, [product.harga, tenor, dpPercent]);
+
+    // --- HANDLERS ---
+    const handleWhatsApp = () => {
+        // MURNI AMBIL DARI BE: Menggunakan product.no_agen
+        const nomorDariBE = product?.no_agen;
+        
+        if (!nomorDariBE) {
+            alert("Nomor agen tidak ditemukan untuk properti ini.");
+            return;
+        }
+
+        // Format nomor agar diawali 62 (menghapus angka 0 di depan jika ada)
+        const cleanNo = nomorDariBE.startsWith('0') ? '62' + nomorDariBE.slice(1) : nomorDariBE;
+
+        const message = encodeURIComponent(
+            `Halo Agen! Saya tertarik dengan properti: ${product.nama_produk}.\n` +
+            `Estimasi cicilan saya: Rp ${Math.round(kpr.cicilan).toLocaleString('id-ID')}/bulan.`
+        );
+        
+        window.open(`https://wa.me/${cleanNo}?text=${message}`, '_blank');
+    };
 
     const handleReplyClick = (parentId: number, targetUsername: string) => {
         setReplyTo({ id: parentId, username: targetUsername });
@@ -62,22 +112,14 @@ export default function ProductDetail({ product }: { product: Product }) {
 
     const handleDelete = (id: number) => {
         if (confirm('Apakah Anda yakin ingin menghapus pesan ini?')) {
-            router.delete(`/ulasan/${id}`, {
-                preserveScroll: true,
-            });
+            router.delete(`/ulasan/${id}`, { preserveScroll: true });
         }
     };
 
     const handleSendComment = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!auth?.user) {
-            alert("Silahkan login terlebih dahulu.");
-            return;
-        }
-        if (!replyTo && rating === 0) {
-            alert("Berikan rating bintang terlebih dahulu!");
-            return;
-        }
+        if (!auth?.user) { alert("Silahkan login terlebih dahulu."); return; }
+        if (!replyTo && rating === 0) { alert("Berikan rating bintang terlebih dahulu!"); return; }
         if (comment.trim() === '') return;
 
         setIsSubmitting(true);
@@ -98,11 +140,6 @@ export default function ProductDetail({ product }: { product: Product }) {
         });
     };
 
-    const handleWhatsApp = () => {
-        const message = encodeURIComponent(`Halo, saya tertarik dengan properti: ${product.nama_produk}`);
-        window.open(`https://wa.me/6287840375227?text=${message}`, '_blank');
-    };
-
     return (
         <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900">
             <Head title={`${product?.nama_produk || 'Detail Properti'} - PropertyKu`} />
@@ -118,12 +155,35 @@ export default function ProductDetail({ product }: { product: Product }) {
 
             <main className="max-w-7xl mx-auto px-8 -mt-12 pb-20">
                 <div className="flex flex-col lg:flex-row gap-8 items-start mb-8">
-                    <div className="w-full lg:w-2/3">
-                        <div className="relative h-[350px] md:h-[480px] w-full rounded-[2.5rem] overflow-hidden shadow-2xl bg-slate-200 border-4 border-white">
-                            <img src={product?.gambar_url || "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800"} className="w-full h-full object-cover" alt={product?.nama_produk} />
+                    {/* VISUAL SECTION */}
+                    <div className="w-full lg:w-2/3 space-y-6">
+                        <div className="relative h-[350px] md:h-[520px] w-full rounded-[2.5rem] overflow-hidden shadow-2xl bg-slate-200 border-4 border-white">
+                            <img 
+                                src={activeImage} 
+                                className="w-full h-full object-cover transition-all duration-500" 
+                                alt={product?.nama_produk} 
+                            />
                         </div>
+
+                        {allImages.length > 1 && (
+                            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                                {allImages.map((img, idx) => (
+                                    <button 
+                                        key={idx}
+                                        onClick={() => setActiveImage(img)}
+                                        className={`relative w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 border-4 transition-all duration-300 ${
+                                            activeImage === img ? 'border-emerald-500 scale-105 shadow-lg' : 'border-white hover:border-emerald-200'
+                                        }`}
+                                    >
+                                        <img src={img} className="w-full h-full object-cover" alt={`view-${idx}`} />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                    <aside className="w-full lg:w-1/3">
+
+                    {/* SIDEBAR SECTION */}
+                    <aside className="w-full lg:w-1/3 space-y-6 ">
                         <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border-t-8 border-t-emerald-600">
                             <span className="bg-emerald-100 text-emerald-700 px-4 py-1.5 rounded-full text-xs font-black mb-4 inline-block uppercase tracking-wider">
                                 {product?.status === 'aktif' ? 'Tersedia' : 'Sold Out'}
@@ -132,32 +192,73 @@ export default function ProductDetail({ product }: { product: Product }) {
                             <h2 className="text-3xl font-black text-emerald-600 mb-6">
                                 Rp {product?.harga ? Number(product.harga).toLocaleString('id-ID') : '0'}
                             </h2>
+
+                            {/* --- CARD SIMULASI KPR --- */}
+                            <div className="bg-slate-50 rounded-3xl p-5 mb-6 border border-slate-100">
+                                <div className="flex items-center gap-2 mb-4 text-emerald-800">
+                                    <Calculator size={20} />
+                                    <h4 className="font-black text-sm uppercase tracking-wide">Simulasi KPR</h4>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                            <span>Uang Muka ({dpPercent}%)</span>
+                                            <span className="text-emerald-700">Rp {kpr.uangMuka.toLocaleString('id-ID')}</span>
+                                        </div>
+                                        <input 
+                                            type="range" min="5" max="50" step="5"
+                                            value={dpPercent}
+                                            onChange={(e) => setDpPercent(Number(e.target.value))}
+                                            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                            <span>Jangka Waktu</span>
+                                            <span className="text-emerald-700">{tenor} Tahun</span>
+                                        </div>
+                                        <input 
+                                            type="range" min="1" max="30"
+                                            value={tenor}
+                                            onChange={(e) => setTenor(Number(e.target.value))}
+                                            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                                        />
+                                    </div>
+
+                                    <div className="pt-4 border-t border-slate-200">
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Estimasi Cicilan / Bulan</p>
+                                        <p className="text-2xl font-black text-slate-900">
+                                            Rp {Math.round(kpr.cicilan).toLocaleString('id-ID')}
+                                            <span className="text-xs text-slate-400 font-medium ml-1">/bln*</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <button onClick={handleWhatsApp} className="w-full bg-[#25D366] text-white py-5 rounded-2xl font-black text-lg hover:bg-[#1ebd58] transition-all flex items-center justify-center gap-3 active:scale-95 shadow-lg">
                                 <MessageCircle size={24} /> WhatsApp Agen
                             </button>
+                            <p className="text-[9px] text-slate-400 mt-4 text-center leading-tight italic">
+                                *Asumsi bunga flat 8.5%. Perhitungan ini hanya estimasi simulasi, hubungi agen untuk rincian bank yang bekerjasama.
+                            </p>
                         </div>
                     </aside>
                 </div>
 
                 <div className="space-y-8">
-                    {/* BAGIAN DESKRIPSI - SETIAP BARIS ADA BULATAN + NYAMPING */}
+                    {/* DESKRIPSI SECTION */}
                     <div className="bg-white rounded-[2.5rem] p-8 md:p-10 shadow-xl overflow-hidden">
                         <h1 className="text-3xl md:text-4xl font-black text-[#1a432d] mb-8">{product?.nama_produk}</h1>
-                        
                         <div className="columns-1 md:columns-2 gap-16 [column-rule:1px_dashed_#e2e8f0]">
                             {product?.deskripsi ? (
                                 product.deskripsi.split('\n').map((line, index) => (
-                                    <div 
-                                        key={index} 
-                                        className="flex items-start gap-4 mb-4 break-inside-avoid-column group"
-                                    >
-                                        {/* Bulatan Hijau di Setiap Baris */}
+                                    <div key={index} className="flex items-start gap-4 mb-4 break-inside-avoid-column group">
                                         <div className="w-5 flex justify-center pt-2.5 shrink-0">
-                                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] group-hover:scale-150 transition-transform duration-300" />
+                                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 group-hover:scale-150 transition-transform duration-300" />
                                         </div>
-
-                                        {/* Teks Deskripsi */}
-                                        <p className="flex-1 text-lg leading-relaxed text-slate-600 font-medium group-hover:text-slate-900 transition-colors duration-300">
+                                        <p className="flex-1 text-lg leading-relaxed text-slate-600 font-medium group-hover:text-slate-900 transition-colors">
                                             {line || "\u00A0"}
                                         </p>
                                     </div>
@@ -168,7 +269,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                         </div>
                     </div>
 
-                    {/* --- BAGIAN ULASAN --- */}
+                    {/* REVIEW SECTION */}
                     <div className="bg-white rounded-[2.5rem] p-8 md:p-10 shadow-xl border border-slate-100">
                         <h3 className="text-2xl font-black text-slate-800 mb-8">Ulasan Pembeli ({product?.ulasans?.length || 0})</h3>
                         
@@ -178,7 +279,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                                     <div className="bg-slate-50/80 p-6 rounded-[2rem] border border-slate-200">
                                         <div className="flex justify-between items-start">
                                             <div className="flex items-center gap-3 mb-2">
-                                                <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-black uppercase ring-2 ring-white">
+                                                <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-black uppercase">
                                                     {rev.user?.username?.charAt(0)}
                                                 </div>
                                                 <div>
@@ -192,7 +293,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 {rev.user_id === auth?.user?.id && (
-                                                    <button onClick={() => handleDelete(rev.id)} className="text-red-300 hover:text-red-600 transition-colors p-1">
+                                                    <button onClick={() => handleDelete(rev.id)} className="text-red-300 hover:text-red-600 p-1">
                                                         <Trash2 size={16} />
                                                     </button>
                                                 )}
@@ -233,7 +334,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                             ))}
                         </div>
 
-                        {/* Form Input */}
+                        {/* INPUT FORM */}
                         <div id="input-ulasan" className="bg-slate-50 p-6 md:p-8 rounded-[2.5rem] border-2 border-dashed border-slate-200 focus-within:border-emerald-500 transition-all">
                             {replyTo && (
                                 <div className="flex items-center justify-between bg-emerald-600 text-white px-4 py-2 rounded-xl mb-4">

@@ -1,56 +1,69 @@
 <?php
-    namespace App\Http\Controllers;
 
-    use App\Models\SavedProperty;
-    use Illuminate\Http\Request;
-    use Inertia\Inertia;
-    use Illuminate\Support\Facades\Auth;
+namespace App\Http\Controllers;
 
-    class SavedPropertyController extends Controller
+use App\Models\SavedProperty;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
+
+class SavedPropertyController extends Controller
+{
+    public function index()
     {
-        // 1. Tampilkan halaman koleksi
-        public function index()
-        {
-            $savedItems = SavedProperty::with('produk')
-                ->where('user_id', Auth::id())
-                ->latest()
-                ->get()
-                ->map(function ($item) {
-                    // Pastikan gambar produk bisa diakses
-                    if ($item->produk) {
-                        $item->produk->gambar_url = $item->produk->gambar 
-                            ? asset('storage/' . $item->produk->gambar) 
-                            : null;
+        $savedItems = SavedProperty::with('produk')
+            ->where('user_id', Auth::id())
+            ->latest()
+            ->get()
+            ->map(function ($item) {
+                if ($item->produk) {
+                    $gambar = $item->produk->gambar;
+                    
+                    // LOGIKA PERBAIKAN: Cek jika gambar adalah array atau string JSON
+                    $namaFile = null;
+                    if (is_array($gambar)) {
+                        $namaFile = $gambar[0] ?? null;
+                    } elseif (is_string($gambar)) {
+                        // Cek jika string adalah JSON (seperti ["foto.jpg"])
+                        $decoded = json_decode($gambar, true);
+                        if (is_array($decoded)) {
+                            $namaFile = $decoded[0] ?? null;
+                        } else {
+                            // Jika string biasa (single file)
+                            $namaFile = $gambar;
+                        }
                     }
-                    return $item;
-                });
 
-            // DISESUAIKAN: Arahkan ke folder 'user' dan file 'simpan'
-            return Inertia::render('user/simpan', [
-                'savedProperties' => $savedItems
-            ]);
-        }
+                    $item->produk->gambar_url = $namaFile 
+                        ? asset('storage/' . $namaFile) 
+                        : null;
+                }
+                return $item;
+            });
 
-        // 2. Logika klik tombol simpan (Toggle)
-        public function toggle($id)
-        {
-            $userId = Auth::id();
-            
-            // Pastikan nama kolom database adalah produk_id sesuai migration kamu
-            $exists = SavedProperty::where('user_id', $userId)
+        return Inertia::render('user/simpan', [
+            'savedProperties' => $savedItems
+        ]);
+    }
+
+    public function toggle($id)
+    {
+        $userId = Auth::id();
+        
+        $exists = SavedProperty::where('user_id', $userId)
                                 ->where('produk_id', $id)
                                 ->first();
 
-            if ($exists) {
-                $exists->delete();
-                return back()->with('message', 'Dihapus dari koleksi');
-            }
-
-            SavedProperty::create([
-                'user_id' => $userId,
-                'produk_id' => $id
-            ]);
-
-            return back()->with('message', 'Tersimpan!');
+        if ($exists) {
+            $exists->delete();
+            return back()->with('message', 'Dihapus dari koleksi');
         }
+
+        SavedProperty::create([
+            'user_id' => $userId,
+            'produk_id' => $id
+        ]);
+
+        return back()->with('message', 'Tersimpan!');
     }
+}
