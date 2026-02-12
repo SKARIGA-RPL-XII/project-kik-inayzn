@@ -31,7 +31,8 @@ export default function EditProduk({ produk, categories }: EditProps) {
         nama_produk: produk.nama_produk || '',
         kategori: produk.kategori || '',
         harga: produk.harga || '',
-        status: produk.status || 'Aktif',
+        // DISESUAIKAN: Pastikan lowercase agar lolos validasi 'in:aktif,nonaktif'
+        status: produk.status?.toLowerCase() || 'aktif',
         stok: produk.stok || '',
         no_agen: produk.no_agen || '',
         deskripsi: produk.deskripsi || '',
@@ -87,13 +88,12 @@ export default function EditProduk({ produk, categories }: EditProps) {
             return;
         }
 
-        // Karena kita mengirim file, kita gunakan POST dengan _method PUT
+        // Method Spoofing: Kirim POST dengan _method PUT karena membawa File
         post(`/produk/${produk.id}`, {
             forceFormData: true,
-            preserveScroll: false, // Set ke false agar saat pindah ke Index, scroll kembali ke atas
+            preserveScroll: true,
             onSuccess: () => {
-                // Notifikasi sukses akan ditangani oleh halaman Index 
-                // melalui usePage().props.flash.success
+                // Tambahkan feedback sukses jika perlu
             },
         });
     };
@@ -129,17 +129,18 @@ export default function EditProduk({ produk, categories }: EditProps) {
                                     {errors.nama_produk && <p className="text-red-600 text-xs mt-1">{errors.nama_produk}</p>}
                                 </div>
 
-                                {/* Status */}
+                                {/* Status - DISESUAIKAN: Value menggunakan lowercase */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold">Status</label>
                                     <select 
                                         value={data.status}
                                         onChange={e => setData('status', e.target.value)}
-                                        className="w-full p-3 rounded-lg border border-slate-200 focus:border-[#1A4D2E] outline-none bg-white"
+                                        className="w-full p-3 rounded-lg border border-slate-200 focus:border-[#1A4D2E] outline-none bg-white capitalize"
                                     >
-                                        <option value="Aktif">Aktif</option>
-                                        <option value="Nonaktif">Nonaktif</option>
+                                        <option value="aktif">Aktif</option>
+                                        <option value="nonaktif">Nonaktif</option>
                                     </select>
+                                    {errors.status && <p className="text-red-600 text-xs mt-1">{errors.status}</p>}
                                 </div>
 
                                 {/* Kategori */}

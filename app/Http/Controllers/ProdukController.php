@@ -31,6 +31,7 @@ class ProdukController extends Controller
             $query->where('kategori', $category);
         }
 
+        // Deteksi apakah ini route admin atau user
         $isAdminRoute = $request->is('produk*') || $request->is('admin/produk*');
 
         if (!$isAdminRoute) {
@@ -41,7 +42,7 @@ class ProdukController extends Controller
             ->paginate($isAdminRoute ? 10 : 12)
             ->withQueryString();
 
-        // Transformasi untuk Thumbnail
+        // Transformasi untuk Thumbnail & Casting Data
         $products->getCollection()->transform(function ($product) {
             $images = $product->gambar;
             if (is_array($images) && count($images) > 0) {
@@ -49,6 +50,11 @@ class ProdukController extends Controller
             } else {
                 $product->gambar_url = "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800";
             }
+            
+            // Pastikan angka tetap angka saat sampai di JS
+            $product->harga = (float) $product->harga;
+            $product->stok = (int) $product->stok;
+            
             return $product;
         });
 
@@ -84,7 +90,6 @@ class ProdukController extends Controller
         $images = $product->gambar;
         $galleryImages = [];
 
-        // Penanganan Galeri Gambar
         if (is_array($images) && count($images) > 0) {
             foreach ($images as $path) {
                 $galleryImages[] = asset('storage/' . $path);
@@ -93,7 +98,6 @@ class ProdukController extends Controller
             $galleryImages[] = "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800";
         }
 
-        // Pastikan no_agen tersedia untuk dikonsumsi Frontend
         $product->gambar_url = $galleryImages[0];
         $product->product_images = $galleryImages;
 
@@ -119,11 +123,11 @@ class ProdukController extends Controller
         $request->validate([
             'nama_produk' => 'required|string|max:255',
             'kategori'    => 'required',
-            'harga'       => 'required|numeric',
-            'stok'        => 'required|numeric',
-            'no_agen'     => 'required|string', // WAJIB ADA
+            'harga'       => 'required|numeric|min:0',
+            'stok'        => 'required|integer|min:0',
+            'no_agen'     => 'required|string',
             'gambar.*'    => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'deskripsi'   => 'nullable',
+            'deskripsi'   => 'nullable|string',
         ]);
 
         $paths = [];
@@ -138,10 +142,10 @@ class ProdukController extends Controller
             'kategori'    => $request->kategori,
             'harga'       => $request->harga,
             'stok'        => $request->stok,
-            'no_agen'     => $request->no_agen, // SIMPAN KE DATABASE
+            'no_agen'     => $request->no_agen,
             'deskripsi'   => $request->deskripsi,
             'gambar'      => $paths,
-            'status'      => 'aktif',
+            'status'      => 'aktif', // Default selalu lowercase
         ]);
 
         return redirect()->route('produk.index')->with('success', 'Produk berhasil ditambahkan');
@@ -157,19 +161,18 @@ class ProdukController extends Controller
         $request->validate([
             'nama_produk' => 'required|string|max:255',
             'kategori'    => 'required',
-            'harga'       => 'required|numeric',
-            'stok'        => 'required|numeric',
-            'no_agen'     => 'required|string', // WAJIB ADA
-            'status'      => 'required|in:aktif,nonaktif',
-            'deskripsi'   => 'required',
+            'harga'       => 'required|numeric|min:0',
+            'stok'        => 'required|integer|min:0',
+            'no_agen'     => 'required|string',
+            'status'      => 'required|in:aktif,nonaktif', // Validasi strict lowercase
+            'deskripsi'   => 'required|string',
             'gambar.*'    => 'nullable|image|max:2048'
         ]);
 
-        // Tambahkan 'no_agen' ke dalam list data yang diupdate
         $data = $request->only(['nama_produk', 'kategori', 'harga', 'stok', 'deskripsi', 'status', 'no_agen']);
 
         if ($request->hasFile('gambar')) {
-            // Hapus file lama
+            // Hapus file lama jika ada upload baru
             if (is_array($product->gambar)) {
                 foreach ($product->gambar as $oldPath) {
                     Storage::disk('public')->delete($oldPath);
@@ -202,11 +205,12 @@ class ProdukController extends Controller
         }
         
         $product->delete();
+        // Menggunakan redirect back agar posisi pagination tidak hilang jika memungkinkan
         return redirect()->back()->with('success', 'Produk berhasil dihapus');
     }
 
     /**
-     * Fitur Simpan (Wishlist)
+     * Wishlist logic (Toggle)
      */
     public function toggleSave($id)
     {
@@ -224,6 +228,9 @@ class ProdukController extends Controller
         return redirect()->back();
     }
 
+    /**
+     * Halaman List Wishlist User
+     */
     public function savedPage()
     {
         if (!Auth::check()) return redirect()->route('login');
@@ -250,7 +257,7 @@ class ProdukController extends Controller
     }
 
     /**
-     * Form Create & Edit (Inertia Render)
+     * Form Render
      */
     public function create()
     {
@@ -266,7 +273,7 @@ class ProdukController extends Controller
     {
         $product = Product::findOrFail($id);
         return Inertia::render('admin/produk/edit', [
-            'produk' => $product,
+            'produk' => $product, // Tetap 'produk' sesuai props di React Edit Anda
             'categories' => Category::all()->map(fn($cat) => [
                 'id' => $cat->id,
                 'name' => $cat->nama_kategori ?? $cat->name

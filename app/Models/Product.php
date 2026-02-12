@@ -17,11 +17,14 @@ class Product extends Model
         'status',
         'deskripsi',
         'gambar',
-        'no_agen' // Tambahkan ke fillable agar bisa disimpan via Admin
+        'no_agen'
     ];
 
     protected $casts = [
-        'gambar' => 'array', 
+        'gambar' => 'array',
+        'harga'  => 'double',
+        'stok'   => 'integer',
+        // Memastikan status selalu terbaca sebagai string lowercase
     ];
 
     public function ulasans(): HasMany
@@ -29,7 +32,10 @@ class Product extends Model
         return $this->hasMany(Ulasan::class, 'produk_id');
     }
 
-    // Helper untuk menampilkan gambar utama
+    /**
+     * Helper untuk menampilkan gambar utama
+     * Akses via: $product->first_image_url
+     */
     public function getFirstImageUrlAttribute()
     {
         if ($this->gambar && is_array($this->gambar) && count($this->gambar) > 0) {
