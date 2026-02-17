@@ -9,20 +9,17 @@ use App\Http\Controllers\SavedPropertyController;
 use App\Http\Controllers\ProfileController;
 use App\Models\Product;
 use App\Models\Ulasan; 
-use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes
+| Public & Guest Routes
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', function () {
-    return redirect()->route('user.dashboard');
-})->name('home');
+Route::get('/', fn() => redirect()->route('user.dashboard'))->name('home');
 
 Route::get('/dashboard', function () {
     if (auth()->check()) {
@@ -41,15 +38,8 @@ Route::get('/user/dashboard', function () {
 })->name('user.dashboard');
 
 Route::get('/products', [ProdukController::class, 'index'])->name('user.products');
-Route::get('/simulator-kpr', function () {
-    return Inertia::render('user/kpr'); 
-})->name('user.kpr');
+Route::get('/simulator-kpr', fn() => Inertia::render('user/kpr'))->name('user.kpr');
 
-/*
-|--------------------------------------------------------------------------
-| Guest Routes
-|--------------------------------------------------------------------------
-*/
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
@@ -66,7 +56,7 @@ Route::middleware(['auth'])->group(function () {
     
     Route::get('/products/{id}', [ProdukController::class, 'show'])->name('user.products.detail');
 
-    // --- ADMIN DASHBOARD (LINKABLE VERSION) ---
+    // --- ADMIN DASHBOARD ---
     Route::get('/admin/dashboard', function () {
         $stats = [
             'properti_terjual' => DB::table('produks')->count(), 
@@ -74,17 +64,12 @@ Route::middleware(['auth'])->group(function () {
             'pengguna_aktif'   => DB::table('users')->where('role', 'user')->count(), 
         ];
 
-        $categories = DB::table('categories')->get();
-        
-        $top_categories = $categories->map(function($cat) {
-            $unitCount = DB::table('produks')->where('kategori', $cat->name)->count();
-
+        $top_categories = DB::table('categories')->get()->map(function($cat) {
             return [
                 'name'    => $cat->name,
-                'sold'    => (int) $unitCount,
+                'sold'    => DB::table('produks')->where('kategori', $cat->name)->count(),
                 'revenue' => 'Lihat Detail',
-                // Mengarahkan ke list produk dengan filter pencarian kategori
-                'url'     => route('produk.index', ['search' => $cat->name]) 
+                'url'     => route('produk.index', ['category' => $cat->name]) 
             ];
         })->sortByDesc('sold')->values()->take(4);
 
@@ -94,10 +79,9 @@ Route::middleware(['auth'])->group(function () {
         ]); 
     })->name('admin.dashboard');
 
-    // --- MANAJEMEN ROUTES ---
+    // --- MANAJEMEN PROFILE & SAVED ---
     Route::get('/saved-properties', [SavedPropertyController::class, 'index'])->name('user.saved');
     Route::post('/products/{id}/save', [SavedPropertyController::class, 'toggle'])->name('user.saved.toggle');
-
     Route::get('/profile', function () {
         return Inertia::render('user/profil', [
             'myReviews' => Ulasan::where('user_id', auth()->id())->with('product')->latest()->get()
@@ -107,25 +91,22 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
 
-    // CRUD PRODUK
-    Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
-    Route::get('/produk/create', [ProdukController::class, 'create'])->name('produk.create');
-    Route::post('/produk', [ProdukController::class, 'store'])->name('produk.store');
-    Route::resource('produk', ProdukController::class)->except(['index', 'create', 'store']);
+    // --- CRUD PRODUK (CLEAN FIX) ---
+    // PERUBAHAN DISINI: Ganti POST menjadi PUT supaya sinkron dengan _method: 'PUT' di React
+    Route::put('/produk/{id}', [ProdukController::class, 'update'])->name('produk.update');
     
-    // CRUD KATEGORI
-    Route::get('/kategori', [KategoriController::class, 'index'])->name('kategori.index');
-    Route::resource('kategori', KategoriController::class)->except(['index']);
+    // Resource route sisanya tanpa mengganggu 'update' yang sudah dibuat manual
+    Route::resource('produk', ProdukController::class)->except(['update']);
+
+    // --- CRUD KATEGORI, PENGGUNA, ULASAN ---
+    Route::resource('kategori', KategoriController::class);
     
-    // CRUD PENGGUNA
     Route::get('/pengguna', [UserController::class, 'index'])->name('user.index');
     Route::post('/pengguna', [UserController::class, 'store'])->name('user.store');
     Route::put('/pengguna/{id}', [UserController::class, 'update'])->name('user.update');
     Route::delete('/pengguna/{id}', [UserController::class, 'destroy'])->name('user.destroy');
 
-    // CRUD ULASAN
     Route::get('/ulasan', [ReviewController::class, 'index'])->name('ulasan.index');
-    Route::get('/ulasan/create', [ReviewController::class, 'create'])->name('ulasan.create');
     Route::post('/ulasan', [ReviewController::class, 'store'])->name('ulasan.store');
     Route::delete('/ulasan/{id}', [ReviewController::class, 'destroy'])->name('ulasan.destroy');
 

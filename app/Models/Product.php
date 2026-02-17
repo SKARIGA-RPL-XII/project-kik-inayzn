@@ -21,21 +21,19 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'gambar' => 'array',
+        'gambar' => 'array', // Laravel otomatis handle JSON ke Array
         'harga'  => 'double',
         'stok'   => 'integer',
-        // Memastikan status selalu terbaca sebagai string lowercase
     ];
+
+    // Agar first_image_url otomatis muncul di data JSON/Inertia
+    protected $appends = ['first_image_url'];
 
     public function ulasans(): HasMany
     {
         return $this->hasMany(Ulasan::class, 'produk_id');
     }
 
-    /**
-     * Helper untuk menampilkan gambar utama
-     * Akses via: $product->first_image_url
-     */
     public function getFirstImageUrlAttribute()
     {
         if ($this->gambar && is_array($this->gambar) && count($this->gambar) > 0) {

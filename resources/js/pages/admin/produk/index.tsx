@@ -4,6 +4,7 @@ import { Search, Plus, Edit, Trash2, CheckCircle2, X, Eye, Phone } from 'lucide-
 import Sidebar from '@/components/sidebar';
 import Header from '@/components/sidebar-header';
 
+// --- Interfaces ---
 interface Product {
     id: number;
     nama_produk: string;
@@ -54,6 +55,15 @@ export default function ProductIndex({ products, filters }: Props) {
         }
     }, [flash]);
 
+    useEffect(() => {
+        if (isDetailOpen && detailProduct) {
+            const updated = products.data.find(p => p.id === detailProduct.id);
+            if (updated) {
+                setDetailProduct(updated);
+            }
+        }
+    }, [products.data]);
+
     // Search Handler
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -62,6 +72,10 @@ export default function ProductIndex({ products, filters }: Props) {
             { preserveState: true, replace: true }
         );
     };
+
+    useEffect(() => {
+        setSearchQuery(filters.search || '');
+    }, [filters.search]);
 
     // Delete Handlers
     const confirmDelete = (id: number, name: string) => {
@@ -185,6 +199,8 @@ export default function ProductIndex({ products, filters }: Props) {
                                                         >
                                                             <Eye size={18} />
                                                         </button>
+
+                                                        {/* EDIT DI TABEL - GUE BALIKIN LAGI */}
                                                         <Link 
                                                             href={`/produk/${item.id}/edit`} 
                                                             className="p-2 text-orange-500 bg-orange-50 rounded-lg hover:bg-orange-500 hover:text-white transition-all shadow-sm"
@@ -192,6 +208,7 @@ export default function ProductIndex({ products, filters }: Props) {
                                                         >
                                                             <Edit size={18} />
                                                         </Link>
+
                                                         <button 
                                                             onClick={() => confirmDelete(item.id, item.nama_produk)} 
                                                             className="p-2 text-rose-600 bg-rose-50 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm"
@@ -222,7 +239,7 @@ export default function ProductIndex({ products, filters }: Props) {
                         </div>
                     </div>
 
-                    {/* PAGINATION */}
+                    {/* PAGINATION TETEP SAMA */}
                     {products.total > 0 && (
                         <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                             <div className="text-sm text-slate-500">
@@ -237,8 +254,9 @@ export default function ProductIndex({ products, filters }: Props) {
                                         className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${link.active
                                             ? 'bg-[#1a432d] text-white shadow-md'
                                             : 'text-slate-500 hover:bg-slate-100 hover:text-[#1a432d]'
-                                            } ${!link.url ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                            } ${!link.url ? 'opacity-30 cursor-not-allowed pointer-events-none' : ''}`}
                                         preserveScroll
+                                        preserveState
                                     />
                                 ))}
                             </div>
@@ -272,8 +290,8 @@ export default function ProductIndex({ products, filters }: Props) {
                                             detailProduct.gambar.map((img, idx) => (
                                                 <div key={idx} className="aspect-square rounded-2xl overflow-hidden border border-slate-100 shadow-sm group">
                                                     <img 
-                                                        src={`/storage/${img}`} 
-                                                        alt="" 
+                                                        src={`/storage/${img}?v=${Date.now()}`} 
+                                                        alt={detailProduct.nama_produk} 
                                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                                                     />
                                                 </div>
@@ -328,25 +346,20 @@ export default function ProductIndex({ products, filters }: Props) {
                             </div>
                         </div>
 
-                        <div className="p-6 bg-slate-50 flex justify-end gap-3">
+                        <div className="p-6 bg-slate-50 flex justify-end">
+                            {/* BUTTON EDIT DATA DI SINI SUDAH DIHAPUS TOTAL */}
                             <button 
                                 onClick={() => setIsDetailOpen(false)}
-                                className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-100 transition-all shadow-sm"
+                                className="w-full px-8 py-3 bg-[#1a432d] text-white rounded-xl font-bold hover:bg-[#143524] transition-all shadow-md"
                             >
                                 Tutup
                             </button>
-                            <Link 
-                                href={`/produk/${detailProduct.id}/edit`}
-                                className="px-8 py-3 bg-[#1a432d] text-white rounded-xl font-bold hover:bg-[#143524] transition-all shadow-md"
-                            >
-                                Edit Data
-                            </Link>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* MODAL KONFIRMASI HAPUS */}
+            {/* MODAL HAPUS TETEP SAMA */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
                     <div className="bg-white rounded-[32px] p-10 max-w-sm w-full shadow-xl animate-in zoom-in-95 duration-200">
@@ -356,7 +369,7 @@ export default function ProductIndex({ products, filters }: Props) {
                             </div>
                             <h3 className="text-2xl font-bold text-slate-800 mb-3">Hapus Data?</h3>
                             <p className="text-slate-500 text-sm mb-10 px-4 leading-relaxed">
-                                Data <span className="font-semibold text-slate-700">"{selectedProduct?.name}"</span> akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.
+                                Data <span className="font-semibold text-slate-700">"{selectedProduct?.name}"</span> akan dihapus secara permanen.
                             </p>
                             <div className="flex gap-3 w-full">
                                 <button 
@@ -367,7 +380,7 @@ export default function ProductIndex({ products, filters }: Props) {
                                 </button>
                                 <button 
                                     onClick={handleDelete} 
-                                    className="flex-1 py-3 rounded-xl bg-[#CC2014] text-white font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
+                                    className="flex-1 py-3 rounded-xl bg-[#CC2014] text-white font-bold hover:bg-red-700 transition-colors"
                                 >
                                     Hapus
                                 </button>
