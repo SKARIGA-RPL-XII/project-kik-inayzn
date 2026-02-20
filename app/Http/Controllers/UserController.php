@@ -10,23 +10,62 @@ use Inertia\Inertia;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // Ambil query pencarian
+        $search = $request->input('search');
+
         return Inertia::render('admin/pengguna/index', [
+            // Admin biasanya tidak dipaginate karena jumlahnya sedikit
             'admins' => User::where('role', 'admin')
-                // Tambahkan 'avatar' dan 'updated_at' agar admin bisa lihat foto & urutan terbaru
+                ->when($search, function ($query, $search) {
+                    $query->where(function($q) use ($search) {
+                        $q->where('username', 'like', "%{$search}%")
+                          ->orWhere('email', 'like', "%{$search}%");
+                    });
+                })
                 ->select('id', 'username', 'email', 'role', 'avatar', 'updated_at')
-                ->latest('updated_at') // Urutkan berdasarkan update terakhir
+                ->latest('updated_at')
                 ->get(),
             
+            // User reguler dengan pagination
             'users' => User::where('role', 'user')
+                ->when($search, function ($query, $search) {
+                    $query->where(function($q) use ($search) {
+                        $q->where('username', 'like', "%{$search}%")
+                          ->orWhere('email', 'like', "%{$search}%");
+                    });
+                })
                 ->select('id', 'username', 'email', 'role', 'avatar', 'updated_at')
                 ->latest('updated_at')
                 ->paginate(10)
+                ->withQueryString(), // Menjaga query string 'search' tetap ada saat pindah halaman
+
+            // Kirim balik nilai filter untuk state di React
+            'filters' => [
+                'search' => $search
+            ]
         ]);
     }
 
-    // Fungsi update profil (biasanya dipanggil oleh admin untuk edit user lain)
+    public function store(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        User::create([
+            'username' => $request->username,
+            'email'    => $request->email,
+            'password' => Hash::make($request->password),
+            'role'     => 'admin', // Default dari form ini adalah tambah admin
+        ]);
+
+        return redirect()->back()->with('message', 'Admin baru berhasil ditambahkan!');
+    }
+
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -49,7 +88,20 @@ class UserController extends Controller
         return redirect()->back()->with('message', 'Data pengguna berhasil diperbarui!');
     }
 
-    // Fungsi updateAvatar (Sudah oke, pastikan ProfileController juga pakai logika yang sama)
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        
+        // Hapus avatar jika ada sebelum hapus user
+        if ($user->avatar) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+        
+        $user->delete();
+
+        return redirect()->back()->with('message', 'Pengguna berhasil dihapus!');
+    }
+
     public function updateAvatar(Request $request)
     {
         $request->validate([
@@ -67,34 +119,5 @@ class UserController extends Controller
         }
 
         return redirect()->back()->with('message', 'Foto profil berhasil diperbarui!');
-    }
-
-    // ... fungsi store dan destroy tetap sama ...
-    public function store(Request $request)
-    {
-        $request->validate([
-            'username' => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|min:8|confirmed',
-        ]);
-
-        User::create([
-            'username' => $request->username,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'role'     => 'admin', 
-        ]);
-
-        return redirect()->back()->with('message', 'Admin baru berhasil ditambahkan!');
-    }
-
-    public function destroy($id)
-    {
-        $user = User::findOrFail($id);
-        if ($user->avatar) {
-            Storage::disk('public')->delete($user->avatar);
-        }
-        $user->delete();
-        return redirect()->back()->with('message', 'Pengguna berhasil dihapus!');
     }
 }

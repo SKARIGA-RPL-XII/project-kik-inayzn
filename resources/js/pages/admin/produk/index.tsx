@@ -38,7 +38,7 @@ export default function ProductIndex({ products, filters }: Props) {
     
     // States
     const [showNotif, setShowNotif] = useState(false);
-    const [searchQuery, setSearchQuery] = useState(filters?.search || '');
+    const [searchQuery, setSearchQuery] = useState(filters.search || '');
     
     // Modal States
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,7 +46,27 @@ export default function ProductIndex({ products, filters }: Props) {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [detailProduct, setDetailProduct] = useState<Product | null>(null);
 
-    // Notification Handler
+    // --- LOGIKA REAL-TIME SEARCH (DEBOUNCE) ---
+    useEffect(() => {
+        // Kita kasih delay 300ms supaya server gak jebol kalau ngetik kecepetan
+        const delayDebounceFn = setTimeout(() => {
+            if (searchQuery !== (filters.search || '')) {
+                router.get('/produk', 
+                    { search: searchQuery }, 
+                    { 
+                        preserveState: true, 
+                        replace: true, 
+                        preserveScroll: true,
+                        only: ['products', 'filters'] 
+                    }
+                );
+            }
+        }, 300);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery]);
+
+    // Update notifikasi
     useEffect(() => {
         if (flash?.success) {
             setShowNotif(true);
@@ -55,29 +75,15 @@ export default function ProductIndex({ products, filters }: Props) {
         }
     }, [flash]);
 
+    // Sinkronisasi data detail jika ada perubahan di background
     useEffect(() => {
         if (isDetailOpen && detailProduct) {
             const updated = products.data.find(p => p.id === detailProduct.id);
-            if (updated) {
-                setDetailProduct(updated);
-            }
+            if (updated) setDetailProduct(updated);
         }
     }, [products.data]);
 
-    // Search Handler
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        router.get('/produk', 
-            { search: searchQuery }, 
-            { preserveState: true, replace: true }
-        );
-    };
-
-    useEffect(() => {
-        setSearchQuery(filters.search || '');
-    }, [filters.search]);
-
-    // Delete Handlers
+    // Handler Delete
     const confirmDelete = (id: number, name: string) => {
         setSelectedProduct({ id, name });
         setIsModalOpen(true);
@@ -86,15 +92,11 @@ export default function ProductIndex({ products, filters }: Props) {
     const handleDelete = () => {
         if (selectedProduct) {
             router.delete(`/produk/${selectedProduct.id}`, {
-                onSuccess: () => {
-                    setIsModalOpen(false);
-                    setSelectedProduct(null);
-                },
+                onSuccess: () => setIsModalOpen(false),
             });
         }
     };
 
-    // Detail Handler
     const openDetail = (product: Product) => {
         setDetailProduct(product);
         setIsDetailOpen(true);
@@ -129,9 +131,9 @@ export default function ProductIndex({ products, filters }: Props) {
                 <Header />
 
                 <main className="p-8">
-                    {/* TOP BAR */}
+                    {/* TOP BAR - INPUT SEKARANG REAL-TIME */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                        <form onSubmit={handleSearch} className="relative w-full max-w-md">
+                        <div className="relative w-full max-w-md">
                             <input
                                 type="text"
                                 value={searchQuery}
@@ -139,10 +141,10 @@ export default function ProductIndex({ products, filters }: Props) {
                                 placeholder="Cari properti..."
                                 className="w-full pl-6 pr-12 py-3 rounded-xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-[#1a432d]/20 focus:border-[#1a432d] outline-none text-slate-600 transition-all bg-white" 
                             />
-                            <button type="submit" className="absolute right-4 top-3.5 text-slate-400 hover:text-[#1a432d]">
+                            <div className="absolute right-4 top-3.5 text-slate-400">
                                 <Search size={20} />
-                            </button>
-                        </form>
+                            </div>
+                        </div>
 
                         <Link
                             href="/produk/create"
@@ -153,7 +155,7 @@ export default function ProductIndex({ products, filters }: Props) {
                         </Link>
                     </div>
 
-                    {/* TABLE SECTION */}
+                    {/* TABLE */}
                     <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-white">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
@@ -167,17 +169,14 @@ export default function ProductIndex({ products, filters }: Props) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {products?.data && products.data.length > 0 ? (
+                                    {products.data.length > 0 ? (
                                         products.data.map((item, index) => (
                                             <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
                                                 <td className="px-6 py-5 text-center font-medium text-slate-400">
                                                     {products.from + index}
                                                 </td>
                                                 <td className="px-6 py-5">
-                                                    <button 
-                                                        onClick={() => openDetail(item)}
-                                                        className="text-slate-700 font-bold hover:text-[#1a432d] transition-colors text-left block"
-                                                    >
+                                                    <button onClick={() => openDetail(item)} className="text-slate-700 font-bold hover:text-[#1a432d] transition-colors text-left block">
                                                         {item.nama_produk}
                                                     </button>
                                                     <span className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{item.kategori}</span>
@@ -192,28 +191,13 @@ export default function ProductIndex({ products, filters }: Props) {
                                                 </td>
                                                 <td className="px-6 py-5">
                                                     <div className="flex justify-center gap-2">
-                                                        <button 
-                                                            onClick={() => openDetail(item)}
-                                                            className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                                                            title="Lihat Detail"
-                                                        >
+                                                        <button onClick={() => openDetail(item)} className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm">
                                                             <Eye size={18} />
                                                         </button>
-
-                                                        {/* EDIT DI TABEL - GUE BALIKIN LAGI */}
-                                                        <Link 
-                                                            href={`/produk/${item.id}/edit`} 
-                                                            className="p-2 text-orange-500 bg-orange-50 rounded-lg hover:bg-orange-500 hover:text-white transition-all shadow-sm"
-                                                            title="Edit"
-                                                        >
+                                                        <Link href={`/produk/${item.id}/edit`} className="p-2 text-orange-500 bg-orange-50 rounded-lg hover:bg-orange-500 hover:text-white transition-all shadow-sm">
                                                             <Edit size={18} />
                                                         </Link>
-
-                                                        <button 
-                                                            onClick={() => confirmDelete(item.id, item.nama_produk)} 
-                                                            className="p-2 text-rose-600 bg-rose-50 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm"
-                                                            title="Hapus"
-                                                        >
+                                                        <button onClick={() => confirmDelete(item.id, item.nama_produk)} className="p-2 text-rose-600 bg-rose-50 rounded-lg hover:bg-rose-600 hover:text-white transition-all shadow-sm">
                                                             <Trash2 size={18} />
                                                         </button>
                                                     </div>
@@ -222,15 +206,8 @@ export default function ProductIndex({ products, filters }: Props) {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={5} className="px-6 py-20 text-center">
-                                                <div className="flex flex-col items-center">
-                                                    <div className="bg-slate-50 p-4 rounded-full mb-4">
-                                                        <Search size={40} className="text-slate-300" />
-                                                    </div>
-                                                    <p className="text-slate-500 italic">
-                                                        {searchQuery ? `Data "${searchQuery}" tidak ditemukan.` : 'Belum ada data properti tersedia.'}
-                                                    </p>
-                                                </div>
+                                            <td colSpan={5} className="px-6 py-20 text-center text-slate-500 italic">
+                                                Tidak ada data ditemukan.
                                             </td>
                                         </tr>
                                     )}
@@ -239,7 +216,7 @@ export default function ProductIndex({ products, filters }: Props) {
                         </div>
                     </div>
 
-                    {/* PAGINATION TETEP SAMA */}
+                    {/* PAGINATION */}
                     {products.total > 0 && (
                         <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                             <div className="text-sm text-slate-500">
@@ -251,10 +228,7 @@ export default function ProductIndex({ products, filters }: Props) {
                                         key={i}
                                         href={link.url || '#'}
                                         dangerouslySetInnerHTML={{ __html: link.label }}
-                                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${link.active
-                                            ? 'bg-[#1a432d] text-white shadow-md'
-                                            : 'text-slate-500 hover:bg-slate-100 hover:text-[#1a432d]'
-                                            } ${!link.url ? 'opacity-30 cursor-not-allowed pointer-events-none' : ''}`}
+                                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${link.active ? 'bg-[#1a432d] text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'} ${!link.url ? 'opacity-30 pointer-events-none' : ''}`}
                                         preserveScroll
                                         preserveState
                                     />
@@ -265,125 +239,53 @@ export default function ProductIndex({ products, filters }: Props) {
                 </main>
             </div>
 
-            {/* MODAL DETAIL PRODUK */}
+            {/* MODAL DETAIL */}
             {isDetailOpen && detailProduct && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white rounded-[32px] overflow-hidden max-w-2xl w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-[32px] overflow-hidden max-w-2xl w-full shadow-2xl">
                         <div className="bg-[#1a432d] p-6 text-white flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-white/20 p-2 rounded-lg text-white">
-                                    <Eye size={20} />
-                                </div>
-                                <h3 className="text-xl font-bold uppercase tracking-tight">Detail Properti</h3>
-                            </div>
-                            <button onClick={() => setIsDetailOpen(false)} className="hover:bg-white/20 p-2 rounded-full transition-colors">
-                                <X size={24} />
-                            </button>
+                            <h3 className="text-xl font-bold uppercase tracking-tight">Detail Properti</h3>
+                            <button onClick={() => setIsDetailOpen(false)} className="p-2"><X size={24} /></button>
                         </div>
-
                         <div className="p-8 max-h-[70vh] overflow-y-auto">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Galeri Properti</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Galeri</p>
                                     <div className="grid grid-cols-2 gap-3">
-                                        {Array.isArray(detailProduct.gambar) && detailProduct.gambar.length > 0 ? (
-                                            detailProduct.gambar.map((img, idx) => (
-                                                <div key={idx} className="aspect-square rounded-2xl overflow-hidden border border-slate-100 shadow-sm group">
-                                                    <img 
-                                                        src={`/storage/${img}?v=${Date.now()}`} 
-                                                        alt={detailProduct.nama_produk} 
-                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                                                    />
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="col-span-2 h-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center text-slate-400 text-sm italic">
-                                                Tidak ada foto
+                                        {detailProduct.gambar?.map((img, idx) => (
+                                            <div key={idx} className="aspect-square rounded-2xl overflow-hidden border">
+                                                <img src={`/storage/${img}`} alt="properti" className="w-full h-full object-cover" />
                                             </div>
-                                        )}
+                                        ))}
                                     </div>
                                 </div>
-
                                 <div className="space-y-6">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Nama Properti</label>
-                                        <p className="text-xl font-black text-slate-800 leading-tight">{detailProduct.nama_produk}</p>
-                                        <span className="inline-block mt-2 px-3 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase">
-                                            {detailProduct.kategori}
-                                        </span>
+                                    <p className="text-xl font-black text-slate-800">{detailProduct.nama_produk}</p>
+                                    <div className="bg-emerald-50 p-4 rounded-2xl">
+                                        <p className="text-lg font-black text-[#1a432d]">Rp {Number(detailProduct.harga).toLocaleString('id-ID')}</p>
                                     </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                                            <label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest block mb-1">Harga</label>
-                                            <p className="text-lg font-black text-[#1a432d]">
-                                                Rp {Number(detailProduct.harga).toLocaleString('id-ID')}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Sisa Stok</label>
-                                            <p className="text-lg font-bold text-slate-700">{detailProduct.stok} <span className="text-sm font-medium">Unit</span></p>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-4 border-t border-slate-100">
-                                        <label className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] block mb-2">Agen Pemasaran</label>
-                                        <div className="flex items-center gap-3 text-slate-700">
-                                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                                <Phone size={18} />
-                                            </div>
-                                            <p className="font-mono font-bold text-lg">{detailProduct.no_agen || 'Belum diatur'}</p>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Status Penjualan</label>
-                                        <span className={`px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider ${detailProduct.status === 'aktif' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
-                                            {detailProduct.status}
-                                        </span>
+                                    <div className="flex items-center gap-3">
+                                        <Phone size={18} className="text-blue-600" />
+                                        <p className="font-mono font-bold text-lg">{detailProduct.no_agen || '-'}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div className="p-6 bg-slate-50 flex justify-end">
-                            {/* BUTTON EDIT DATA DI SINI SUDAH DIHAPUS TOTAL */}
-                            <button 
-                                onClick={() => setIsDetailOpen(false)}
-                                className="w-full px-8 py-3 bg-[#1a432d] text-white rounded-xl font-bold hover:bg-[#143524] transition-all shadow-md"
-                            >
-                                Tutup
-                            </button>
-                        </div>
+                        <div className="p-6 bg-slate-50"><button onClick={() => setIsDetailOpen(false)} className="w-full py-3 bg-[#1a432d] text-white rounded-xl font-bold">Tutup</button></div>
                     </div>
                 </div>
             )}
 
-            {/* MODAL HAPUS TETEP SAMA */}
+            {/* MODAL HAPUS */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
-                    <div className="bg-white rounded-[32px] p-10 max-w-sm w-full shadow-xl animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/40">
+                    <div className="bg-white rounded-[32px] p-10 max-w-sm w-full shadow-xl">
                         <div className="flex flex-col items-center text-center">
-                            <div className="text-red-500 bg-red-50 w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                                <Trash2 size={48} strokeWidth={1.5} />
-                            </div>
+                            <Trash2 size={48} className="text-red-500 mb-6" />
                             <h3 className="text-2xl font-bold text-slate-800 mb-3">Hapus Data?</h3>
-                            <p className="text-slate-500 text-sm mb-10 px-4 leading-relaxed">
-                                Data <span className="font-semibold text-slate-700">"{selectedProduct?.name}"</span> akan dihapus secara permanen.
-                            </p>
-                            <div className="flex gap-3 w-full">
-                                <button 
-                                    onClick={() => setIsModalOpen(false)} 
-                                    className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-colors"
-                                >
-                                    Batal
-                                </button>
-                                <button 
-                                    onClick={handleDelete} 
-                                    className="flex-1 py-3 rounded-xl bg-[#CC2014] text-white font-bold hover:bg-red-700 transition-colors"
-                                >
-                                    Hapus
-                                </button>
+                            <div className="flex gap-3 w-full mt-10">
+                                <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold">Batal</button>
+                                <button onClick={handleDelete} className="flex-1 py-3 bg-[#CC2014] text-white rounded-xl font-bold">Hapus</button>
                             </div>
                         </div>
                     </div>

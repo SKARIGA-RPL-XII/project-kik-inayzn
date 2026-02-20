@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Tambah useEffect
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { 
     Search, Plus, Edit, X, Eye, ShieldAlert, Mail, 
@@ -7,11 +7,14 @@ import {
 import Sidebar from '@/components/sidebar'; 
 import Header from '@/components/sidebar-header';
 
-export default function UserIndex({ admins, users }: any) {
+export default function UserIndex({ admins, users, filters }: any) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false); 
     const [selectedUser, setSelectedUser] = useState<any>(null);
+
+    // 1. State untuk menampung input pencarian
+    const [searchQuery, setSearchQuery] = useState(filters?.search || '');
 
     const { data, setData, post, put, processing, errors, reset } = useForm({
         username: '',
@@ -20,7 +23,23 @@ export default function UserIndex({ admins, users }: any) {
         password_confirmation: '',
     });
 
-    // Format Tanggal & Waktu Indonesia
+    // 2. LOGIC REAL-TIME SEARCH (Debounce 300ms)
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            router.get(
+                '/pengguna', 
+                { search: searchQuery }, 
+                { 
+                    preserveState: true, 
+                    replace: true, 
+                    preserveScroll: true 
+                }
+            );
+        }, 300);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery]);
+
     const formatFullDateTime = (dateString: string) => {
         if (!dateString) return '-';
         return new Date(dateString).toLocaleDateString('id-ID', {
@@ -76,8 +95,15 @@ export default function UserIndex({ admins, users }: any) {
 
                 <main className="p-8">
                     <div className="flex justify-between items-center mb-8">
+                        {/* 3. INPUT SEARCH DENGAN VALUE & ONCHANGE */}
                         <div className="relative w-full max-w-lg">
-                            <input type="text" placeholder="Cari pengguna..." className="w-full pl-6 pr-12 py-3.5 rounded-xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-[#1a432d]/20 focus:border-[#1a432d] outline-none text-slate-500 transition-all bg-white" />
+                            <input 
+                                type="text" 
+                                placeholder="Cari pengguna..." 
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-6 pr-12 py-3.5 rounded-xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-[#1a432d]/20 focus:border-[#1a432d] outline-none text-slate-500 transition-all bg-white" 
+                            />
                             <Search className="absolute right-4 top-3.5 text-slate-400" size={22} />
                         </div>
                         <button onClick={openAddModal} className="bg-[#1a432d] hover:bg-[#143524] text-white px-8 py-3.5 rounded-xl flex items-center gap-3 font-bold shadow-md transition-all active:scale-95 text-lg">
@@ -85,7 +111,6 @@ export default function UserIndex({ admins, users }: any) {
                         </button>
                     </div>
 
-                    {/* TABLE */}
                     <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm bg-white">
                         <table className="w-full text-left border-collapse">
                             <thead>
@@ -98,6 +123,7 @@ export default function UserIndex({ admins, users }: any) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm">
+                                {/* TABEL ADMIN */}
                                 {admins.map((admin: any, index: number) => (
                                     <tr key={admin.id} className="hover:bg-blue-50/20 transition-colors bg-blue-50/5">
                                         <td className="px-6 py-5 text-center text-blue-500 font-bold">{index + 1}</td>
@@ -114,6 +140,7 @@ export default function UserIndex({ admins, users }: any) {
                                     </tr>
                                 ))}
                                 
+                                {/* TABEL USER REGULER */}
                                 {users.data.map((user: any, index: number) => (
                                     <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-5 text-center text-slate-500 font-medium">{admins.length + (index + 1)}</td>
@@ -129,13 +156,38 @@ export default function UserIndex({ admins, users }: any) {
                                         </td>
                                     </tr>
                                 ))}
+
+                                {/* TAMPILAN JIKA TIDAK ADA DATA (SEARCH TIDAK DITEMUKAN) */}
+                                {admins.length === 0 && users.data.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-20 text-center">
+                                            <div className="flex flex-col items-center justify-center">
+                                                <div className="bg-slate-50 p-6 rounded-[2.5rem] mb-4 text-slate-300">
+                                                    <Search size={48} strokeWidth={1} />
+                                                </div>
+                                                <h3 className="text-lg font-bold text-slate-700">Pengguna tidak ditemukan</h3>
+                                                <p className="text-slate-400 text-sm max-w-[300px] mx-auto mt-1 leading-relaxed">
+                                                    Maaf, kami tidak menemukan hasil untuk kata kunci <span className="font-bold text-[#1a432d]">"{searchQuery}"</span>. Coba periksa kembali ejaan Anda.
+                                                </p>
+                                                {searchQuery && (
+                                                    <button 
+                                                        onClick={() => setSearchQuery('')}
+                                                        className="mt-6 px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                                                    >
+                                                        Bersihkan Pencarian
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </main>
             </div>
 
-            {/* --- MODAL DETAIL USER --- */}
+            {/* MODAL DETAIL */}
             {isDetailModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md p-4">
                     <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden relative animate-in zoom-in duration-300">
@@ -172,7 +224,6 @@ export default function UserIndex({ admins, users }: any) {
                             </div>
 
                             <div className="space-y-3 text-left">
-                                {/* EMAIL */}
                                 <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                     <div className="p-2 bg-white rounded-lg text-slate-400 shadow-sm"><Mail size={18} /></div>
                                     <div>
@@ -181,7 +232,6 @@ export default function UserIndex({ admins, users }: any) {
                                     </div>
                                 </div>
 
-                                {/* PEMBARUAN AKUN */}
                                 <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                     <div className="p-2 bg-white rounded-lg text-emerald-500 shadow-sm"><Clock size={18} /></div>
                                     <div>
@@ -190,7 +240,6 @@ export default function UserIndex({ admins, users }: any) {
                                     </div>
                                 </div>
 
-                                {/* KEAMANAN DATA */}
                                 <div className="mt-6 p-5 bg-amber-50 rounded-[1.5rem] border border-amber-100 flex gap-4 items-start">
                                     <div className="p-2 bg-amber-500 rounded-xl text-white shrink-0 shadow-lg">
                                         <ShieldAlert size={20} />
@@ -198,7 +247,7 @@ export default function UserIndex({ admins, users }: any) {
                                     <div className="text-left">
                                         <h4 className="text-xs font-black text-amber-700 uppercase mb-1">Keamanan Data</h4>
                                         <p className="text-[11px] text-amber-600/80 font-medium leading-relaxed">
-                                            Password ter-enkripsi. Perubahan data terakhir (Nama/Email/Pass) terdeteksi pada <span className="font-bold">{formatFullDateTime(selectedUser?.updated_at)}</span>.
+                                            Password ter-enkripsi. Perubahan data terakhir terdeteksi pada <span className="font-bold">{formatFullDateTime(selectedUser?.updated_at)}</span>.
                                         </p>
                                     </div>
                                 </div>

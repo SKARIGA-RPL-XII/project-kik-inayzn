@@ -19,7 +19,7 @@ export default function CreateProduk({ categories }: CreateProps) {
         status: 'aktif',
         stok: '',
         deskripsi: '',
-        no_agen: '', // SUDAH DIGANTI: dari no_hp_agen ke no_agen
+        no_agen: '', 
         gambar: [] as File[],
     });
 
@@ -239,7 +239,7 @@ export default function CreateProduk({ categories }: CreateProps) {
 
                         {/* Media Properti */}
                         <div className="space-y-4">
-                            <label className="text-sm font-bold text-slate-900">Media Properti (Bisa banyak)<span className="text-red-500">*</span></label>
+                            <label className="text-sm font-bold text-slate-900">Media Properti<span className="text-red-500">*</span></label>
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                 <div className={`aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-50 transition-all relative overflow-hidden bg-white 
                                     ${ (errors.gambar || (isErrorShake && data.gambar.length === 0)) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 hover:border-emerald-400' }`}>

@@ -114,7 +114,7 @@ class ProdukController extends Controller
             'no_agen'     => 'required|string',
             'deskripsi'   => 'required|string',
             'gambar'      => 'required|array|min:1',
-            'gambar.*'    => 'image|max:2048',
+            'gambar.*'    => 'image|max:10240', // 10MB
         ]);
 
         $paths = [];
@@ -126,7 +126,7 @@ class ProdukController extends Controller
 
         Product::create(array_merge($request->all(), [
             'gambar' => $paths, 
-            'status' => $request->status ?? 'aktif'
+            'status' => strtolower($request->status ?? 'aktif')
         ]));
         
         return redirect('/produk')->with('success', 'Produk berhasil ditambahkan');
@@ -135,7 +135,6 @@ class ProdukController extends Controller
     public function edit($id)
     {
         $produk = Product::findOrFail($id);
-        // Pastikan gambar dipassing sebagai array bersih ke frontend
         $produk->gambar = $this->normalizeImages($produk->gambar);
 
         return Inertia::render('admin/produk/edit', [
@@ -151,12 +150,6 @@ class ProdukController extends Controller
     {
         $product = Product::findOrFail($id);
         
-        // Perbaikan: Terkadang existing_images datang sebagai string dari FormData
-        // Kita pastikan dia array agar divalidasi dengan benar
-        if ($request->has('existing_images') && is_string($request->existing_images)) {
-            $request->merge(['existing_images' => explode(',', $request->existing_images)]);
-        }
-
         $request->validate([
             'nama_produk'     => 'required|string|max:255',
             'kategori'        => 'required|string',
@@ -165,40 +158,49 @@ class ProdukController extends Controller
             'status'          => 'required|string',
             'no_agen'         => 'required|string',
             'deskripsi'       => 'required|string',
-            'gambar.*'        => 'nullable|image|max:2048',
-            'existing_images' => 'required_without:gambar|array', 
-        ], [
-            'existing_images.required_without' => 'Minimal harus ada satu gambar yang dipertahankan.',
+            'gambar.*'        => 'nullable|image|max:10240', // 10MB
         ]);
 
-        $data = $request->only(['nama_produk', 'kategori', 'harga', 'stok', 'deskripsi', 'status', 'no_agen']);
+        $data = $request->only(['nama_produk', 'kategori', 'harga', 'stok', 'deskripsi', 'no_agen']);
+        $data['status'] = strtolower($request->status);
         
         $currentImagesInDb = $this->normalizeImages($product->gambar);
-        $imagesToKeep = $request->input('existing_images', []); 
         
-        // Hapus file fisik yang dibuang di frontend
-        $imagesToDelete = array_diff($currentImagesInDb, $imagesToKeep);
-        foreach ($imagesToDelete as $path) {
-            $cleanPath = trim($path, " \"");
-            if (Storage::disk('public')->exists($cleanPath)) {
-                Storage::disk('public')->delete($cleanPath);
-            }
-        }
-        
-        // Tambah Gambar Baru
-        $updatedImages = $imagesToKeep;
+        // Logika Baru: Jika ada upload gambar baru, ganti semua foto lama
         if ($request->hasFile('gambar')) {
+            // Hapus file fisik lama dari storage
+            foreach ($currentImagesInDb as $path) {
+                $cleanPath = trim($path, " \"");
+                if (Storage::disk('public')->exists($cleanPath)) {
+                    Storage::disk('public')->delete($cleanPath);
+                }
+            }
+
+            // Simpan gambar baru
+            $updatedImages = [];
             foreach ($request->file('gambar') as $file) {
                 $updatedImages[] = $file->store('produk', 'public');
             }
+        } else {
+            // Jika tidak ada upload baru, cek apakah user minta hapus via tombol hapus (remove_old_image)
+            if ($request->remove_old_image === 'true' || $request->remove_old_image === true) {
+                foreach ($currentImagesInDb as $path) {
+                    $cleanPath = trim($path, " \"");
+                    if (Storage::disk('public')->exists($cleanPath)) {
+                        Storage::disk('public')->delete($cleanPath);
+                    }
+                }
+                $updatedImages = [];
+            } else {
+                // Tetap gunakan gambar lama
+                $updatedImages = $currentImagesInDb;
+            }
         }
 
-        // Pastikan format gambar konsisten (Array)
         $data['gambar'] = array_values($updatedImages); 
         
         $product->update($data);
 
-        // Redirect HARUS ke route yang benar. Gunakan path absolute.
         return redirect('/produk')->with('success', 'Properti berhasil diperbarui');
     }
 

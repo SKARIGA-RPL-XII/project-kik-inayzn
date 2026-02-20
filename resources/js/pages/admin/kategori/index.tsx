@@ -4,7 +4,7 @@ import { Search, Plus, Edit, Trash2, X, AlertCircle, Sparkles, CheckCircle2 } fr
 import Sidebar from '@/components/sidebar'; 
 import Header from '@/components/sidebar-header';
 
-export default function CategoryIndex({ categories }: any) {
+export default function CategoryIndex({ categories, filters }: any) {
     // --- STATE LOGIC ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -12,12 +12,35 @@ export default function CategoryIndex({ categories }: any) {
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [selectedName, setSelectedName] = useState('');
     
+    // State untuk Real-time Search - Inisialisasi dari props filters agar sinkron
+    const [searchQuery, setSearchQuery] = useState(filters?.search || '');
+    
     // State untuk Notifikasi
     const [notification, setNotification] = useState<{show: boolean, message: string} | null>(null);
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         nama_kategori: '',
     });
+
+    // --- LOGIKA REAL-TIME SEARCH (DEBOUNCE) ---
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            // Logika sinkronisasi: Hanya kirim request jika state lokal berbeda dengan data di URL/Server
+            if (searchQuery !== (filters?.search || '')) {
+                router.get('/kategori', 
+                    { search: searchQuery }, 
+                    { 
+                        preserveState: true, // Menjaga input tetap fokus dan state tidak reset
+                        replace: true,       // Menghindari tumpukan history browser saat mengetik
+                        preserveScroll: true, // Mencegah halaman scroll ke atas otomatis
+                        only: ['categories', 'filters'] // Hanya me-refresh data tabel dan filter
+                    }
+                );
+            }
+        }, 300);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery]);
 
     // Auto-hide notifikasi
     useEffect(() => {
@@ -119,6 +142,8 @@ export default function CategoryIndex({ categories }: any) {
                         <div className="relative w-full max-w-md">
                             <input
                                 type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Cari kategori..."
                                 className="w-full pl-6 pr-12 py-3 rounded-xl border border-slate-200 shadow-sm focus:ring-2 focus:ring-[#1a432d]/20 
                                 focus:border-[#1a432d] outline-none text-slate-900 font-medium transition-all"
@@ -175,7 +200,9 @@ export default function CategoryIndex({ categories }: any) {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-10 text-center text-slate-500 italic">Belum ada data kategori.</td>
+                                        <td colSpan={4} className="px-6 py-10 text-center text-slate-500 italic">
+                                            {searchQuery ? `Kategori "${searchQuery}" tidak ditemukan.` : 'Belum ada data kategori.'}
+                                        </td>
                                     </tr>
                                 )}
                             </tbody>

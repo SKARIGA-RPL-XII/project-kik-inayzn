@@ -3,22 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
-use App\Models\Product; // Ingat, Abang pakai Product
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Redirect;
 
 class KategoriController extends Controller
 {
-    public function index()
+    public function index(Request $request) // Tambahkan Request $request
     {
-        // Tetap pakai withCount supaya jumlah produk otomatis muncul
-        $categories = Category::withCount('products')
+        // 1. Ambil data dengan filter pencarian
+        $categories = Category::query()
+            ->when($request->search, function ($query, $search) {
+                // Mencari berdasarkan kolom 'name' di tabel categories
+                $query->where('name', 'like', '%' . $search . '%');
+            })
+            ->withCount('products')
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString(); // Menjaga parameter ?search tetap ada saat pindah halaman
 
         return Inertia::render('admin/kategori/index', [
-            'categories' => $categories
+            'categories' => $categories,
+            // 2. Kirim data filter kembali ke React agar input search tetap terisi
+            'filters' => $request->only(['search'])
         ]);
     }
 
@@ -38,15 +45,11 @@ class KategoriController extends Controller
         return Redirect::back()->with('success', 'Kategori berhasil ditambahkan!');
     }
 
-    /**
-     * METHOD UPDATE: Ini yang tadi hilang sehingga bikin error
-     */
     public function update(Request $request, $id)
     {
         $category = Category::findOrFail($id);
 
         $request->validate([
-            // unique:categories,name,{$id} artinya boleh sama dengan namanya sendiri saat ini
             'nama_kategori' => 'required|string|max:255|unique:categories,name,' . $id,
         ], [
             'nama_kategori.required' => 'Nama kategori wajib diisi.',
@@ -60,14 +63,9 @@ class KategoriController extends Controller
         return Redirect::back()->with('success', 'Kategori berhasil diperbarui!');
     }
 
-    /**
-     * METHOD DESTROY: Biar tombol hapus di UI juga berfungsi
-     */
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
-        
-        // Hapus kategori (Pastikan logic di database sudah diatur untuk produk yang terkait)
         $category->delete();
 
         return Redirect::back()->with('success', 'Kategori berhasil dihapus!');
