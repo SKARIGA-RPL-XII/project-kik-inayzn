@@ -206,7 +206,7 @@ export default function ProductPage() {
                 </form>
             </div>
 
-            {/* PRODUCT GRID (Gaya Dashboard Baru) */}
+            {/* PRODUCT GRID */}
             <main className="max-w-7xl mx-auto px-8 py-20">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                     {dataProduk.length > 0 ? dataProduk.map((product: any) => {
@@ -284,19 +284,25 @@ export default function ProductPage() {
                 </div>
             </main>
 
-            {/* MODAL AUTH (Gaya Dashboard) */}
+            {/* MODAL AUTH */}
             {showAuthModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-[#1a432d]/80 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
-                    <div className="relative bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl text-center">
-                        <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                            <Lock size={32} className="text-emerald-600" />
-                        </div>
-                        <h3 className="text-2xl font-black text-[#1a432d] mb-2">Akses Terkunci</h3>
-                        <p className="text-slate-500 text-sm mb-8 font-medium">Silakan login untuk melihat detail properti dan lokasi lengkap.</p>
-                        <div className="flex flex-col gap-3">
-                            <Link href="/login" className="bg-[#1a432d] text-white py-4 rounded-xl font-bold hover:brightness-110 no-underline">Masuk Sekarang</Link>
-                            <button onClick={() => setShowAuthModal(false)} className="mt-2 text-slate-400 text-xs font-bold uppercase tracking-widest bg-transparent border-none cursor-pointer">Tutup</button>
+                    <div className="absolute inset-0 bg-[#1a432d]/60 backdrop-blur-md animate-in fade-in" onClick={() => setShowAuthModal(false)} />
+                    <div className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in slide-in-from-bottom-8 duration-300 text-center overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -mr-16 -mt-16" />
+                        <div className="relative z-10">
+                            <div className="w-20 h-20 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6 rotate-3">
+                                <Lock size={40} className="text-emerald-600 -rotate-3" />
+                            </div>
+                            <h3 className="text-2xl font-black text-[#1a432d] mb-3">Satu Langkah Lagi!</h3>
+                            <p className="text-slate-500 text-sm mb-8 px-4">
+                                Bergabunglah dengan <span className="text-emerald-600 font-bold">PropertyKu</span> untuk untuk melihat detail informasi dan lokasi.
+                                </p>
+                            <div className="grid grid-cols-1 gap-3">
+                                <Link href="/login" className="bg-[#1a432d] text-white text-center font-bold py-4 rounded-2xl hover:bg-emerald-800 transition-all shadow-lg active:scale-95">Masuk Sekarang</Link>
+                                <Link href="/register" className="bg-emerald-500 text-white text-center font-bold py-4 rounded-2xl hover:bg-emerald-400 transition-all shadow-lg active:scale-95">Daftar Akun Baru</Link>
+                                <button onClick={() => setShowAuthModal(false)} className="mt-2 text-slate-400 text-[10px] font-black uppercase tracking-widest bg-transparent border-none cursor-pointer">Tutup</button>
+                            </div>
                         </div>
                     </div>
                 </div>

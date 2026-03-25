@@ -101,7 +101,14 @@ export default function UserDashboard() {
     const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop';
 
     return (
-        <div className="min-h-screen bg-white font-sans overflow-x-hidden">
+        /* protect */
+        <div 
+            className="min-h-screen bg-white font-sans overflow-x-hidden select-none"
+            onContextMenu={(e) => e.preventDefault()}
+            onCopy={(e) => e.preventDefault()}
+            onCut={(e) => e.preventDefault()}
+            onDragStart={(e) => e.preventDefault()}
+        >
             <Head title="PropertyKu - Home" />
 
             {/* NAVBAR */}
@@ -112,21 +119,54 @@ export default function UserDashboard() {
                     </Link>
 
                     <div className="hidden lg:flex items-center gap-6 ml-4 border-l border-emerald-800 pl-8">
-                        <Link href="/dashboard" className={`text-sm font-bold flex items-center gap-2 ${usePage().url === '/dashboard' ? 'text-emerald-400' : 'opacity-70 hover:opacity-100'}`}>
+                        
+                        <Link 
+                            href="/dashboard" 
+                            className={`text-sm flex items-center gap-2 transition-all ${
+                                usePage().url === '/dashboard' 
+                                ? 'text-emerald-400 font-bold opacity-100' 
+                                : 'opacity-70 hover:opacity-100 font-medium'
+                            }`}
+                        >
                             <LayoutDashboard size={16}/> Dashboard
                         </Link>
-                        <Link href="/products" className={`text-sm font-bold flex items-center gap-2 ${usePage().url.startsWith('/products') ? 'text-emerald-400' : 'opacity-100'}`}>
+
+                        <Link 
+                            href="/products" 
+                            className={`text-sm flex items-center gap-2 transition-all ${
+                                usePage().url.startsWith('/products') 
+                                ? 'text-emerald-400 font-bold opacity-100' 
+                                : 'opacity-70 hover:opacity-100 font-medium'
+                            }`}
+                        >
                             <HomeIcon size={16}/> Properti
                         </Link>
-                        <Link href="/simulator-kpr" className="text-sm font-bold flex items-center gap-2 opacity-70 hover:opacity-100 hover:text-emerald-400 transition-colors">
+
+                        {/* Simulator KPR */}
+                        <Link 
+                            href="/simulator-kpr" 
+                            className={`text-sm flex items-center gap-2 transition-all ${
+                                usePage().url === '/simulator-kpr' 
+                                ? 'text-emerald-400 font-bold opacity-100' 
+                                : 'opacity-70 hover:opacity-100 font-medium'
+                            }`}
+                        >
                             <Calculator size={16}/> Simulator KPR
                         </Link>
-                        <Link href="/saved-properties" className="text-sm font-bold flex items-center gap-2 opacity-70 hover:opacity-100 hover:text-emerald-400 transition-colors">
+
+                        <Link 
+                            href="/saved-properties" 
+                            className={`text-sm flex items-center gap-2 transition-all ${
+                                usePage().url === '/saved-properties' 
+                                ? 'text-emerald-400 font-bold opacity-100' 
+                                : 'opacity-70 hover:opacity-100 font-medium'
+                            }`}
+                        >
                             <Bookmark size={16}/> Tersimpan
                         </Link>
                     </div>
                 </div>
-
+                
                 <div className="flex items-center">
                     {auth.user ? (
                         <div className="flex items-center gap-6">
@@ -152,7 +192,7 @@ export default function UserDashboard() {
             {/* HERO SECTION */}
             <div className="relative h-[500px] md:h-[600px] w-full flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 z-0">
-                    <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop" className="w-full h-full object-cover brightness-[0.3]" alt="Hero" />
+                    <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop" className="w-full h-full object-cover brightness-[0.3] pointer-events-none" alt="Hero" />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1a432d]/20 to-white z-10"></div>
                 
@@ -221,7 +261,7 @@ export default function UserDashboard() {
                                     <div className="relative h-64 overflow-hidden">
                                         <img 
                                             src={displayImage} 
-                                            className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${!auth.user ? 'blur-[2px] brightness-75' : ''}`} 
+                                            className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 pointer-events-none ${!auth.user ? 'blur-[2px] brightness-75' : ''}`} 
                                             alt={product.nama_produk}
                                             onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
                                                 e.currentTarget.src = FALLBACK_IMAGE;
@@ -286,19 +326,21 @@ export default function UserDashboard() {
             {/* MODAL AUTH */}
             {showAuthModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-[#1a432d]/80 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
-                    <div className="relative bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl animate-in zoom-in duration-300">
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                                <Lock size={32} className="text-emerald-600" />
+                    <div className="absolute inset-0 bg-[#1a432d]/60 backdrop-blur-md animate-in fade-in" onClick={() => setShowAuthModal(false)} />
+                    <div className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in slide-in-from-bottom-8 duration-300 text-center overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -mr-16 -mt-16" />
+                        <div className="relative z-10">
+                            <div className="w-20 h-20 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6 rotate-3">
+                                <Lock size={40} className="text-emerald-600 -rotate-3" />
                             </div>
-                            <h3 className="text-2xl font-black text-[#1a432d] mb-2">Akses Terbatas</h3>
-                            <p className="text-slate-500 text-sm mb-8">Silakan login terlebih dahulu untuk melihat informasi detail properti dan lokasi.</p>
-                            
-                            <div className="flex flex-col gap-3">
-                                <Link href="/login" className="bg-[#1a432d] text-white text-center font-bold py-4 rounded-xl hover:brightness-110 transition-all">Masuk Sekarang</Link>
-                                <Link href="/register" className="bg-emerald-500 text-white text-center font-bold py-4 rounded-xl hover:brightness-110 transition-all">Daftar Akun Baru</Link>
-                                <button onClick={() => setShowAuthModal(false)} className="mt-2 text-slate-400 text-xs font-bold uppercase tracking-widest">Tutup</button>
+                            <h3 className="text-2xl font-black text-[#1a432d] mb-3">Satu Langkah Lagi!</h3>
+                            <p className="text-slate-500 text-sm mb-8 px-4">
+                                Bergabunglah dengan <span className="text-emerald-600 font-bold">PropertyKu</span> untuk melihat detail informasi dan lokasi.
+                            </p>
+                            <div className="grid grid-cols-1 gap-3">
+                                <Link href="/login" className="bg-[#1a432d] text-white text-center font-bold py-4 rounded-2xl hover:bg-emerald-800 transition-all shadow-lg active:scale-95">Masuk Sekarang</Link>
+                                <Link href="/register" className="bg-emerald-500 text-white text-center font-bold py-4 rounded-2xl hover:bg-emerald-400 transition-all shadow-lg active:scale-95">Daftar Akun Baru</Link>
+                                <button onClick={() => setShowAuthModal(false)} className="mt-2 text-slate-400 text-[10px] font-black uppercase tracking-widest bg-transparent border-none cursor-pointer">Tutup</button>
                             </div>
                         </div>
                     </div>
