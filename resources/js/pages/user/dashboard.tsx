@@ -15,7 +15,6 @@ import {
     Lock 
 } from 'lucide-react'; 
 
-// --- 1. INTERFACE DEFINITIONS ---
 interface Product {
     id: number;
     nama_produk: string;
@@ -237,91 +236,94 @@ export default function UserDashboard() {
 
             {/* PROPERTY LIST */}
             <div className="max-w-7xl mx-auto px-6 py-20">
-                <div className="flex items-center justify-between mb-12">
-                    <div>
-                        <span className="text-emerald-600 font-bold text-xs uppercase tracking-widest">Pilihan Terbaik</span>
-                        <h2 className="text-3xl font-black text-[#1a432d]">Properti Terbaru</h2>
-                    </div>
-                    <Link href="/products" className="hidden sm:flex items-center gap-2 text-emerald-700 font-bold hover:gap-3 transition-all">
-                        Semua Properti <ArrowRight size={18} />
-                    </Link>
-                </div>
+    <div className="flex items-center justify-between mb-12">
+        <div>
+            <span className="text-emerald-600 font-bold text-xs uppercase tracking-widest">Pilihan Terbaik</span>
+            <h2 className="text-3xl font-black text-[#1a432d]">Properti Terbaru</h2>
+        </div>
+        <Link href="/products" className="hidden sm:flex items-center gap-2 text-emerald-700 font-bold hover:gap-3 transition-all">
+            Semua Properti <ArrowRight size={18} />
+        </Link>
+    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {filteredProducts.length > 0 ? (
-                        filteredProducts.map((product) => {
-                            let displayImage = FALLBACK_IMAGE;
-                            if (product.gambar) {
-                                const images = Array.isArray(product.gambar) ? product.gambar : product.gambar.split(',');
-                                if (images[0]) displayImage = `/storage/${images[0].trim()}`;
-                            }
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => {
+                let displayImage = FALLBACK_IMAGE;
+                if (product.gambar) {
+                    const images = Array.isArray(product.gambar) ? product.gambar : product.gambar.split(',');
+                    if (images[0]) displayImage = `/storage/${images[0].trim()}`;
+                }
 
-                            return (
-                                <div key={product.id} className="group bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col h-full">
-                                    <div className="relative h-64 overflow-hidden">
-                                        <img 
-                                            src={displayImage} 
-                                            className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 pointer-events-none ${!auth.user ? 'blur-[2px] brightness-75' : ''}`} 
-                                            alt={product.nama_produk}
-                                            onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                                                e.currentTarget.src = FALLBACK_IMAGE;
-                                            }}
-                                        />
-                                        
-                                        <button 
-                                            onClick={() => toggleFavorite(product.id)}
-                                            className={`absolute top-4 right-4 p-2.5 rounded-xl shadow-lg transition-all z-10 backdrop-blur-md ${
-                                                favorites.includes(product.id) ? 'bg-rose-500 text-white' : 'bg-white/80 text-slate-700 hover:bg-white'
-                                            }`}
-                                        >
-                                            <Bookmark size={18} fill={favorites.includes(product.id) ? "currentColor" : "none"} />
-                                        </button>
+                return (
+                    <Link 
+                        key={product.id} 
+                        href={`/products/${product.id}`}
+                        onClick={(e) => !auth.user && (e.preventDefault(), setShowAuthModal(true))}
+                        className="group bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col h-full cursor-pointer"
+                    >
+                        <div className="relative h-64 overflow-hidden">
+                            <img 
+                                src={displayImage} 
+                                className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 pointer-events-none ${!auth.user ? 'blur-[2px] brightness-75' : ''}`} 
+                                alt={product.nama_produk}
+                                onError={(e) => { e.currentTarget.src = FALLBACK_IMAGE; }}
+                            />
+                            
+                            <button 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    toggleFavorite(product.id);
+                                }}
+                                className={`absolute top-4 right-4 p-2.5 rounded-xl shadow-lg transition-all z-10 backdrop-blur-md ${
+                                    favorites.includes(product.id) ? 'bg-rose-500 text-white' : 'bg-white/80 text-slate-700 hover:bg-white'
+                                }`}
+                            >
+                                <Bookmark size={18} fill={favorites.includes(product.id) ? "currentColor" : "none"} />
+                            </button>
 
-                                        {!auth.user && (
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <div className="bg-white p-3 rounded-full shadow-xl mb-2">
-                                                    <Lock size={20} className="text-[#1a432d]" />
-                                                </div>
-                                                <span className="text-white text-[10px] font-bold uppercase tracking-widest">Login untuk detail</span>
-                                            </div>
-                                        )}
-
-                                        <div className="absolute bottom-4 left-4 bg-[#1a432d] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg z-10">
-                                            {typeof product.kategori === 'object' ? product.kategori?.nama_kategori : product.kategori || 'Properti'}
-                                        </div>
+                            {!auth.user && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="bg-white p-3 rounded-full shadow-xl mb-2">
+                                        <Lock size={20} className="text-[#1a432d]" />
                                     </div>
-
-                                    <div className="p-6 flex flex-col flex-grow">
-                                        <h3 className="font-bold text-slate-800 text-xl mb-2 line-clamp-1">{product.nama_produk}</h3>
-                                        <p className="text-slate-400 text-sm flex items-center gap-2 mb-6">
-                                            <MapPin size={14} className="text-emerald-500" />
-                                            <span className="line-clamp-1">{product.deskripsi || 'Lokasi Premium'}</span>
-                                        </p>
-
-                                        <div className="mt-auto pt-5 border-t border-slate-50 flex items-center justify-between">
-                                            <div>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase">Harga Mulai</p>
-                                                <p className="text-emerald-700 font-black text-xl">{formatIDR(product.harga)}</p>
-                                            </div>
-                                            <Link 
-                                                href={`/products/${product.id}`}
-                                                onClick={(e) => !auth.user && (e.preventDefault(), setShowAuthModal(true))}
-                                                className="bg-emerald-50 p-3 rounded-2xl text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
-                                            >
-                                                <ArrowRight size={20} />
-                                            </Link>
-                                        </div>
-                                    </div>
+                                    <span className="text-white text-[10px] font-bold uppercase tracking-widest">Login untuk detail</span>
                                 </div>
-                            );
-                        })
-                    ) : (
-                        <div className="col-span-full py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                            <p className="text-slate-400 font-medium">Tidak ada properti yang ditemukan.</p>
+                            )}
+
+                            <div className="absolute bottom-4 left-4 bg-[#1a432d] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg z-10">
+                                {typeof product.kategori === 'object' ? product.kategori?.nama_kategori : product.kategori || 'Properti'}
+                            </div>
                         </div>
-                    )}
-                </div>
+
+                        <div className="p-6 flex flex-col flex-grow">
+                            <h3 className="font-bold text-slate-800 text-xl mb-2 line-clamp-1">{product.nama_produk}</h3>
+                            <p className="text-slate-400 text-sm flex items-center gap-2 mb-6">
+                                <MapPin size={14} className="text-emerald-500" />
+                                <span className="line-clamp-1">{product.deskripsi || 'Lokasi Premium'}</span>
+                            </p>
+
+                            <div className="mt-auto pt-5 border-t border-slate-50 flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase">Harga Mulai</p>
+                                    <p className="text-emerald-700 font-black text-xl">{formatIDR(product.harga)}</p>
+                                </div>
+                                <div className="bg-emerald-50 p-3 rounded-2xl text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
+                                    <ArrowRight size={20} />
+                                </div>
+                            </div>
+                        </div>
+                    </Link>
+                );
+            })
+        ) : (
+            <div className="col-span-full py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                <p className="text-slate-400 font-medium">Tidak ada properti yang ditemukan.</p>
             </div>
+        )}
+    </div>
+</div>
 
             {/* MODAL AUTH */}
             {showAuthModal && (
@@ -354,29 +356,22 @@ export default function UserDashboard() {
             </a>
 
             {/* FOOTER */}
-            <footer className="bg-slate-900 pt-20 pb-10 text-white">
-                <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
-                    <div>
-                        <h2 className="text-2xl font-black mb-4">PropertyKu.</h2>
-                        <p className="text-slate-400 max-w-sm text-sm leading-relaxed">Platform properti terpercaya untuk menemukan hunian impian dengan proses transparan dan mudah.</p>
-                    </div>
-                    <div className="flex gap-12 md:justify-end">
-                        <div className="flex flex-col gap-3">
-                            <span className="font-bold text-emerald-400 mb-2">Menu</span>
-                            <Link href="/products" className="text-slate-400 hover:text-white text-sm">Cari Properti</Link>
-                            <Link href="/simulator-kpr" className="text-slate-400 hover:text-white text-sm">Simulasi KPR</Link>
-                        </div>
-                        <div className="flex flex-col gap-3">
-                            <span className="font-bold text-emerald-400 mb-2">Bantuan</span>
-                            <Link href="#" className="text-slate-400 hover:text-white text-sm">FAQ</Link>
-                            <Link href="#" className="text-slate-400 hover:text-white text-sm">Kontak Kami</Link>
-                        </div>
-                    </div>
+            <footer className="bg-slate-900 py-8 text-white border-t border-slate-800">
+            <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="flex flex-col md:flex-row items-center gap-4">
+                    <h2 className="text-xl font-black tracking-tight">PropertyKu.</h2>
+                    <div className="hidden md:block h-4 w-[1px] bg-slate-700"></div>
+                    <p className="text-slate-400 text-xs italic">Platform properti terpercaya & transparan.</p>
                 </div>
-                <div className="text-center pt-8 border-t border-slate-800">
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em]">&copy; 2026 PropertyKu. Built for Excellence.</p>
+                <div className="flex gap-6 items-center">
+                    <Link href="/products" className="text-slate-400 hover:text-white text-xs font-medium transition-colors">Cari Properti</Link>
+                    <Link href="/simulator-kpr" className="text-slate-400 hover:text-white text-xs font-medium transition-colors">Simulasi KPR</Link>
                 </div>
-            </footer>
+                <p className="text-slate-500 text-[9px] font-bold uppercase tracking-[0.2em]">
+                    &copy; 2026 PropertyKu.
+                </p>
+            </div>
+        </footer>
         </div>
     );
 }

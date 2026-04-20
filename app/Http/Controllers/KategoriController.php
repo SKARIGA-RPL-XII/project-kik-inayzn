@@ -9,22 +9,19 @@ use Illuminate\Support\Facades\Redirect;
 
 class KategoriController extends Controller
 {
-    public function index(Request $request) // Tambahkan Request $request
+    public function index(Request $request)
     {
-        // 1. Ambil data dengan filter pencarian
         $categories = Category::query()
             ->when($request->search, function ($query, $search) {
-                // Mencari berdasarkan kolom 'name' di tabel categories
                 $query->where('name', 'like', '%' . $search . '%');
             })
             ->withCount('products')
             ->latest()
             ->paginate(10)
-            ->withQueryString(); // Menjaga parameter ?search tetap ada saat pindah halaman
+            ->withQueryString();
 
         return Inertia::render('admin/kategori/index', [
             'categories' => $categories,
-            // 2. Kirim data filter kembali ke React agar input search tetap terisi
             'filters' => $request->only(['search'])
         ]);
     }

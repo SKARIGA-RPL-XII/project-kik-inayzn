@@ -24,10 +24,10 @@ export default function Dashboard({
 }: DashboardProps) {
 
     const getCategoryTheme = (name: string) => {
-        const n = name.toLowerCase();
-        if (n.includes('subsidi')) return 'text-blue-600 bg-blue-50';
-        if (n.includes('komersial')) return 'text-emerald-600 bg-emerald-50';
-        if (n.includes('ruko') || n.includes('bisnis')) return 'text-amber-600 bg-amber-50';
+        const n = name ? name.toLowerCase() : '';
+        if (n.includes('rumah')) return 'text-emerald-600 bg-emerald-50';
+        if (n.includes('apartemen')) return 'text-blue-600 bg-blue-50';
+        if (n.includes('ruko')) return 'text-amber-600 bg-amber-50';
         return 'text-[#1A4D2E] bg-slate-50';
     };
 
@@ -36,7 +36,6 @@ export default function Dashboard({
             <Head title="Admin Dashboard" />
 
             <div className="mx-auto max-w-7xl px-6 py-10">
-                {/* HEADER SECTION */}
                 <div className="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard Ringkasan</h1>
@@ -50,10 +49,7 @@ export default function Dashboard({
 
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-6">
                     <div className="lg:col-span-4 space-y-8">
-                        
-                        {/* STAT CARDS (BAGIAN YANG LU MAKSUD) */}
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                            {/* Properti Link */}
                             <Link href="/produk" className="group bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                                 <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-[#1A4D2E] flex items-center justify-center mb-4 group-hover:bg-[#1A4D2E] group-hover:text-white transition-colors">
                                     <Building2 size={24} />
@@ -65,7 +61,6 @@ export default function Dashboard({
                                 </div>
                             </Link>
 
-                            {/* Ulasan Link */}
                             <Link href="/ulasan" className="group bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                                 <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4 group-hover:bg-amber-500 group-hover:text-white transition-colors">
                                     <MessageSquare size={24} />
@@ -77,7 +72,6 @@ export default function Dashboard({
                                 </div>
                             </Link>
 
-                            {/* Pengguna Link */}
                             <Link href="/pengguna" className="group bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                                 <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                     <Users size={24} />
@@ -90,7 +84,6 @@ export default function Dashboard({
                             </Link>
                         </div>
 
-                        {/* KATEGORI SECTION (YANG UDAH BISA) */}
                         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
                             <div className="p-6 border-b border-slate-50 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -106,20 +99,20 @@ export default function Dashboard({
                                     {top_categories.map((cat, idx) => (
                                         <Link 
                                             key={idx} 
-                                            href={cat.url || '#'} 
+                                            href={`/produk?kategori=${cat.name}`} 
                                             className="flex items-center justify-between p-4 rounded-2xl border border-slate-50 bg-slate-50/30 hover:bg-white hover:border-[#1A4D2E]/20 hover:shadow-md transition-all group"
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center shadow-sm ${getCategoryTheme(cat.name)}`}>
-                                                    <Home size={18} />
+                                                <div className={`h-12 w-12 rounded-xl flex items-center justify-center shadow-sm ${getCategoryTheme(cat.name)}`}>
+                                                    <Home size={20} />
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-slate-800 text-sm uppercase tracking-tight">{cat.name}</h4>
                                                     <p className="text-[11px] text-slate-500 font-medium">{cat.sold} Unit Terdaftar</p>
                                                 </div>
                                             </div>
-                                            <div className="text-[10px] text-[#1A4D2E] font-bold uppercase group-hover:underline">
-                                                {cat.revenue}
+                                            <div className="text-[10px] text-slate-700 font-bold uppercase group-hover:text-[#1A4D2E]">
+                                                Lihat Detail
                                             </div>
                                         </Link>
                                     ))}
@@ -128,7 +121,6 @@ export default function Dashboard({
                         </div>
                     </div>
 
-                    {/* SIDEBAR CTA */}
                     <div className="lg:col-span-2">
                         <div className="bg-[#1A4D2E] rounded-3xl p-8 text-white relative overflow-hidden shadow-lg shadow-emerald-900/20">
                             <div className="relative z-10">

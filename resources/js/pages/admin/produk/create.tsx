@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
 import Sidebar from '@/components/sidebar'; 
-import { ImagePlus, AlertCircle, X, Phone } from 'lucide-react';
+import { ImagePlus, AlertCircle, X, Phone, Tag } from 'lucide-react';
 
 interface CreateProps {
     categories: Array<{ id: number; name: string }>;
@@ -9,7 +9,6 @@ interface CreateProps {
 
 export default function CreateProduk({ categories }: CreateProps) {
     const [isErrorShake, setIsErrorShake] = useState(false);
-    const [focusedField, setFocusedField] = useState<string | null>(null);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
     const { data, setData, post, processing, errors, clearErrors, setError } = useForm({
@@ -17,38 +16,38 @@ export default function CreateProduk({ categories }: CreateProps) {
         kategori: '',
         harga: '',
         status: 'aktif',
+        tipe_penawaran: 'jual',
         stok: '',
         deskripsi: '',
         no_agen: '', 
         gambar: [] as File[],
     });
 
-    // Handle Preview Gambar
-    useEffect(() => {
-        if (data.gambar.length > 0) {
-            const objectUrls = data.gambar.map(file => URL.createObjectURL(file));
-            setImagePreviews(objectUrls);
-            return () => objectUrls.forEach(url => URL.revokeObjectURL(url));
-        } else {
-            setImagePreviews([]);
-        }
-    }, [data.gambar]);
-
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const filesArray = Array.from(e.target.files);
+            const newPreviews = filesArray.map(file => URL.createObjectURL(file));
+            
+            setImagePreviews(prev => [...prev, ...newPreviews]);
             setData('gambar', [...data.gambar, ...filesArray]);
+            clearErrors('gambar');
         }
     };
 
     const removeImage = (index: number) => {
-        const updatedFiles = data.gambar.filter((_, i) => i !== index);
-        setData('gambar', updatedFiles);
+        URL.revokeObjectURL(imagePreviews[index]);
+        setImagePreviews(prev => prev.filter((_, i) => i !== index));
+        setData('gambar', data.gambar.filter((_, i) => i !== index));
     };
+
+    useEffect(() => {
+        return () => {
+            imagePreviews.forEach(url => URL.revokeObjectURL(url));
+        };
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setFocusedField(null);
         clearErrors();
         
         let hasError = false;
@@ -58,7 +57,7 @@ export default function CreateProduk({ categories }: CreateProps) {
             harga: "Harga properti wajib diisi",
             stok: "Stok tidak boleh kosong",
             deskripsi: "Deskripsi properti masih kosong",
-            no_agen: "Nomor WhatsApp agen wajib diisi", // Validasi disesuaikan
+            no_agen: "Nomor WhatsApp agen wajib diisi",
         };
 
         Object.entries(checks).forEach(([field, message]) => {
@@ -91,7 +90,6 @@ export default function CreateProduk({ categories }: CreateProps) {
             <Sidebar />
 
             <main className="flex-1 p-8">
-                {/* Header User Info */}
                 <div className="flex justify-end items-center mb-10 gap-4">
                     <div className="text-right">
                         <p className="text-xl font-semibold text-[#1A4D2E]">Ziera een</p>
@@ -108,29 +106,21 @@ export default function CreateProduk({ categories }: CreateProps) {
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-2 gap-6">
-                            {/* Nama Produk */}
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-slate-900">Nama Properti<span className="text-red-500">*</span></label>
                                 <input
                                     type="text"
                                     placeholder="Masukkan nama properti"
                                     value={data.nama_produk}
-                                    onFocus={() => { setFocusedField('nama_produk'); clearErrors('nama_produk'); }}
                                     className={`w-full p-3 rounded-lg border outline-none transition-all text-slate-900 bg-white font-medium 
-                                    ${ (errors.nama_produk || (isErrorShake && !data.nama_produk)) ? 
-                                    'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
+                                    ${ (errors.nama_produk) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                     onChange={e => setData('nama_produk', e.target.value)}
                                 />
-                                {errors.nama_produk && (
-                                    <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in">
-                                        <AlertCircle size={12} /> {errors.nama_produk}
-                                    </p>
-                                )}
+                                {errors.nama_produk && <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> {errors.nama_produk}</p>}
                             </div>
 
-                            {/* Status */}
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-900">Status</label>
+                                <label className="text-sm font-bold text-slate-900">Status Listing</label>
                                 <select 
                                     value={data.status}
                                     className="w-full p-3 rounded-lg border border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50 outline-none bg-white text-slate-900 font-medium cursor-pointer"
@@ -141,15 +131,38 @@ export default function CreateProduk({ categories }: CreateProps) {
                                 </select>
                             </div>
 
-                            {/* Kategori */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-slate-900">Tipe Penawaran<span className="text-red-500">*</span></label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setData('tipe_penawaran', 'jual')}
+                                        className={`flex items-center justify-center gap-2 p-3 rounded-lg border font-bold text-sm transition-all
+                                        ${data.tipe_penawaran === 'jual' 
+                                            ? 'bg-emerald-50 border-[#1A4D2E] text-[#1A4D2E] ring-2 ring-emerald-100' 
+                                            : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-50'}`}
+                                    >
+                                        <Tag size={16} /> Dijual
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setData('tipe_penawaran', 'sewa')}
+                                        className={`flex items-center justify-center gap-2 p-3 rounded-lg border font-bold text-sm transition-all
+                                        ${data.tipe_penawaran === 'sewa' 
+                                            ? 'bg-blue-50 border-blue-600 text-blue-600 ring-2 ring-blue-100' 
+                                            : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-50'}`}
+                                    >
+                                        <Tag size={16} /> Disewakan
+                                    </button>
+                                </div>
+                            </div>
+
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-slate-900">Kategori<span className="text-red-500">*</span></label>
                                 <select 
                                     value={data.kategori}
-                                    onFocus={() => { setFocusedField('kategori'); clearErrors('kategori'); }}
                                     className={`w-full p-3 rounded-lg border outline-none bg-white text-slate-900 font-medium cursor-pointer 
-                                    ${ (errors.kategori || (isErrorShake && !data.kategori)) ? 
-                                    'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
+                                    ${ (errors.kategori) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                     onChange={e => setData('kategori', e.target.value)}
                                 >
                                     <option value="">Pilih kategori</option>
@@ -157,47 +170,38 @@ export default function CreateProduk({ categories }: CreateProps) {
                                         <option key={cat.id} value={cat.name}>{cat.name}</option>
                                     ))}
                                 </select>
-                                {errors.kategori && (
-                                    <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in">
-                                        <AlertCircle size={12} /> {errors.kategori}
-                                    </p>
-                                )}
+                                {errors.kategori && <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> {errors.kategori}</p>}
                             </div>
 
-                            {/* Stok */}
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-slate-900">Stok Unit<span className="text-red-500">*</span></label>
                                 <input
                                     type="number"
                                     placeholder="0"
                                     value={data.stok}
-                                    onFocus={() => { setFocusedField('stok'); clearErrors('stok'); }}
                                     className={`w-full p-3 rounded-lg border outline-none text-slate-900 bg-white font-medium 
-                                    ${ (errors.stok || (isErrorShake && !data.stok)) ? 
-                                    'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
+                                    ${ (errors.stok) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                     onChange={e => setData('stok', e.target.value)}
                                 />
+                                {errors.stok && <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> {errors.stok}</p>}
                             </div>
 
-                            {/* Harga */}
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-900">Harga Jual<span className="text-red-500">*</span></label>
+                                <label className="text-sm font-bold text-slate-900">Harga {data.tipe_penawaran === 'sewa' ? '/ Bulan' : 'Jual'}<span className="text-red-500">*</span></label>
                                 <div className="relative">
                                     <span className="absolute left-3 top-3.5 text-slate-900 font-bold text-sm">Rp</span>
                                     <input
                                         type="number"
                                         placeholder="0"
                                         value={data.harga}
-                                        onFocus={() => { setFocusedField('harga'); clearErrors('harga'); }}
                                         className={`w-full p-3 pl-10 rounded-lg border outline-none text-slate-900 bg-white font-bold 
-                                        ${ (errors.harga || (isErrorShake && !data.harga)) ? 
-                                        'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
+                                        ${ (errors.harga) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                         onChange={e => setData('harga', e.target.value)}
                                     />
                                 </div>
+                                {errors.harga && <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> {errors.harga}</p>}
                             </div>
 
-                            {/* NO HP AGEN */}
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-slate-900">No. WhatsApp Agen<span className="text-red-500">*</span></label>
                                 <div className="relative">
@@ -205,44 +209,35 @@ export default function CreateProduk({ categories }: CreateProps) {
                                     <input
                                         type="text"
                                         placeholder="628123xxx"
-                                        value={data.no_agen} // SUDAH DIGANTI
-                                        onFocus={() => { setFocusedField('no_agen'); clearErrors('no_agen'); }}
+                                        value={data.no_agen}
                                         className={`w-full p-3 pl-10 rounded-lg border outline-none text-slate-900 bg-white font-medium 
-                                        ${ (errors.no_agen || (isErrorShake && !data.no_agen)) ? 
-                                        'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
+                                        ${ (errors.no_agen) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                         onChange={e => setData('no_agen', e.target.value)}
                                     />
                                 </div>
                                 <p className="text-[10px] text-slate-400 italic font-medium">*Gunakan kode negara (Contoh: 62878...)</p>
-                                {errors.no_agen && (
-                                    <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in">
-                                        <AlertCircle size={12} /> {errors.no_agen}
-                                    </p>
-                                )}
+                                {errors.no_agen && <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> {errors.no_agen}</p>}
                             </div>
                         </div>
 
-                        {/* Deskripsi */}
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-900">Deskripsi Lengkap<span className="text-red-500">*</span></label>
                             <textarea
                                 rows={4}
                                 placeholder="Jelaskan detail produk..."
                                 value={data.deskripsi}
-                                onFocus={() => { setFocusedField('deskripsi'); clearErrors('deskripsi'); }}
                                 className={`w-full p-3 rounded-lg border outline-none resize-none text-slate-900 bg-white font-medium 
-                                ${ (errors.deskripsi || (isErrorShake && !data.deskripsi)) ? 
-                                'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
+                                ${ (errors.deskripsi) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 focus:border-[#1A4D2E] focus:ring-4 focus:ring-emerald-50' }`}
                                 onChange={e => setData('deskripsi', e.target.value)}
                             ></textarea>
+                            {errors.deskripsi && <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> {errors.deskripsi}</p>}
                         </div>
 
-                        {/* Media Properti */}
                         <div className="space-y-4">
                             <label className="text-sm font-bold text-slate-900">Media Properti<span className="text-red-500">*</span></label>
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                 <div className={`aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-50 transition-all relative overflow-hidden bg-white 
-                                    ${ (errors.gambar || (isErrorShake && data.gambar.length === 0)) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 hover:border-emerald-400' }`}>
+                                    ${ (errors.gambar) ? 'border-red-500 ring-2 ring-red-100 animate-shake bg-red-50' : 'border-slate-300 hover:border-emerald-400' }`}>
                                     <input 
                                         type="file" multiple accept="image/*"
                                         className="absolute inset-0 opacity-0 cursor-pointer z-10" 
@@ -253,7 +248,7 @@ export default function CreateProduk({ categories }: CreateProps) {
                                 </div>
 
                                 {imagePreviews.map((url, index) => (
-                                    <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 group">
+                                    <div key={url} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 group">
                                         <img src={url} alt="Preview" className="w-full h-full object-cover" />
                                         <button type="button" onClick={() => removeImage(index)}
                                             className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
@@ -262,9 +257,9 @@ export default function CreateProduk({ categories }: CreateProps) {
                                     </div>
                                 ))}
                             </div>
+                            {errors.gambar && <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 animate-fade-in"><AlertCircle size={12} /> {errors.gambar}</p>}
                         </div>
 
-                        {/* Action Buttons */}
                         <div className="flex justify-end gap-4 mt-10">
                             <Link href="/produk" className="px-8 py-2.5 rounded-lg bg-slate-500 text-white hover:bg-slate-600 transition-colors font-bold text-sm shadow-sm">Kembali</Link>
                             <button

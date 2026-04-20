@@ -308,25 +308,23 @@ export default function ProductPage() {
                 </div>
             )}
 
-            {/* FOOTER (Gaya Dashboard Baru) */}
-            <footer className="bg-slate-900 pt-20 pb-10 text-white">
-                <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-2 gap-12 mb-16 text-left">
-                    <div>
-                        <h2 className="text-2xl font-black mb-4">PropertyKu.</h2>
-                        <p className="text-slate-400 max-w-sm text-sm leading-relaxed font-medium">Platform properti terpercaya untuk menemukan hunian impian dengan proses transparan.</p>
-                    </div>
-                    <div className="flex gap-12 md:justify-end">
-                        <div className="flex flex-col gap-3">
-                            <span className="font-bold text-emerald-400 mb-2">Menu</span>
-                            <Link href="/products" className="text-slate-400 hover:text-white text-sm no-underline">Cari Properti</Link>
-                            <Link href="/simulator-kpr" className="text-slate-400 hover:text-white text-sm no-underline">Simulasi KPR</Link>
-                        </div>
-                    </div>
+            {/* FOOTER */}
+            <footer className="bg-slate-900 py-8 text-white border-t border-slate-800">
+            <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="flex flex-col md:flex-row items-center gap-4">
+                    <h2 className="text-xl font-black tracking-tight">PropertyKu.</h2>
+                    <div className="hidden md:block h-4 w-[1px] bg-slate-700"></div>
+                    <p className="text-slate-400 text-xs italic">Platform properti terpercaya & transparan.</p>
                 </div>
-                <div className="text-center pt-8 border-t border-slate-800">
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em]">&copy; 2026 PropertyKu. Built for Excellence.</p>
+                <div className="flex gap-6 items-center">
+                    <Link href="/products" className="text-slate-400 hover:text-white text-xs font-medium transition-colors">Cari Properti</Link>
+                    <Link href="/simulator-kpr" className="text-slate-400 hover:text-white text-xs font-medium transition-colors">Simulasi KPR</Link>
                 </div>
-            </footer>
+                <p className="text-slate-500 text-[9px] font-bold uppercase tracking-[0.2em]">
+                    &copy; 2026 PropertyKu.
+                </p>
+            </div>
+        </footer>
         </div>
     );
 }

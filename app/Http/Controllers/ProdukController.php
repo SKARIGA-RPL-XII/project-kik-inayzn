@@ -12,26 +12,20 @@ use Inertia\Inertia;
 
 class ProdukController extends Controller
 {
-    /**
-     * Tampilan Katalog (Admin & User)
-     */
     public function index(Request $request)
     {
         $query = Product::query();
 
-        // Pencarian
         if ($request->filled('search')) {
             $search = trim($request->search);
             $query->where('nama_produk', 'like', "%{$search}%");
         }
 
-        // Filter Kategori
         if ($request->filled('category') && $request->category !== 'Semua Kategori') {
             $category = trim($request->category);
             $query->where('kategori', $category);
         }
 
-        // Cek akses admin atau user (berdasarkan prefix URL)
         $isAdminRoute = $request->is('produk*') || $request->is('admin/produk*');
 
         if (!$isAdminRoute) {
@@ -44,14 +38,12 @@ class ProdukController extends Controller
 
         $products->getCollection()->transform(function ($product) {
             $images = $this->normalizeImages($product->gambar);
-
             if (count($images) > 0) {
                 $firstImage = trim($images[0], " \"");
                 $product->gambar_url = asset('storage/' . $firstImage);
             } else {
                 $product->gambar_url = "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800";
             }
-            
             $product->harga = (float) $product->harga;
             $product->stok = (int) $product->stok;
             return $product;
@@ -109,12 +101,13 @@ class ProdukController extends Controller
         $request->validate([
             'nama_produk' => 'required|string|max:255',
             'kategori'    => 'required|string',
+            'tipe_penawaran' => 'required|string',
             'harga'       => 'required|numeric|min:0',
             'stok'        => 'required|integer|min:0',
             'no_agen'     => 'required|string',
             'deskripsi'   => 'required|string',
             'gambar'      => 'required|array|min:1',
-            'gambar.*'    => 'image|max:10240', // 10MB
+            'gambar.*'    => 'image|max:10240',
         ]);
 
         $paths = [];
@@ -124,10 +117,17 @@ class ProdukController extends Controller
             }
         }
 
-        Product::create(array_merge($request->all(), [
-            'gambar' => $paths, 
+        Product::create([
+            'nama_produk' => $request->nama_produk,
+            'kategori' => $request->kategori,
+            'tipe_penawaran' => $request->tipe_penawaran,
+            'harga' => $request->harga,
+            'stok' => $request->stok,
+            'no_agen' => $request->no_agen,
+            'deskripsi' => $request->deskripsi,
+            'gambar' => $paths,
             'status' => strtolower($request->status ?? 'aktif')
-        ]));
+        ]);
         
         return redirect('/produk')->with('success', 'Produk berhasil ditambahkan');
     }
@@ -153,22 +153,21 @@ class ProdukController extends Controller
         $request->validate([
             'nama_produk'     => 'required|string|max:255',
             'kategori'        => 'required|string',
+            'tipe_penawaran'  => 'required|string',
             'harga'           => 'required|numeric|min:0',
             'stok'            => 'required|integer|min:0',
             'status'          => 'required|string',
             'no_agen'         => 'required|string',
             'deskripsi'       => 'required|string',
-            'gambar.*'        => 'nullable|image|max:10240', // 10MB
+            'gambar.*'        => 'nullable|image|max:10240',
         ]);
 
-        $data = $request->only(['nama_produk', 'kategori', 'harga', 'stok', 'deskripsi', 'no_agen']);
+        $data = $request->only(['nama_produk', 'kategori', 'tipe_penawaran', 'harga', 'stok', 'deskripsi', 'no_agen']);
         $data['status'] = strtolower($request->status);
         
         $currentImagesInDb = $this->normalizeImages($product->gambar);
         
-        // Logika Baru: Jika ada upload gambar baru, ganti semua foto lama
         if ($request->hasFile('gambar')) {
-            // Hapus file fisik lama dari storage
             foreach ($currentImagesInDb as $path) {
                 $cleanPath = trim($path, " \"");
                 if (Storage::disk('public')->exists($cleanPath)) {
@@ -176,13 +175,11 @@ class ProdukController extends Controller
                 }
             }
 
-            // Simpan gambar baru
             $updatedImages = [];
             foreach ($request->file('gambar') as $file) {
                 $updatedImages[] = $file->store('produk', 'public');
             }
         } else {
-            // Jika tidak ada upload baru, cek apakah user minta hapus via tombol hapus (remove_old_image)
             if ($request->remove_old_image === 'true' || $request->remove_old_image === true) {
                 foreach ($currentImagesInDb as $path) {
                     $cleanPath = trim($path, " \"");
@@ -192,13 +189,11 @@ class ProdukController extends Controller
                 }
                 $updatedImages = [];
             } else {
-                // Tetap gunakan gambar lama
                 $updatedImages = $currentImagesInDb;
             }
         }
 
         $data['gambar'] = array_values($updatedImages); 
-        
         $product->update($data);
 
         return redirect('/produk')->with('success', 'Properti berhasil diperbarui');

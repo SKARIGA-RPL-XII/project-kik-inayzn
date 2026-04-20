@@ -12,6 +12,7 @@ class Product extends Model
     protected $fillable = [
         'nama_produk',
         'kategori',
+        'tipe_penawaran',
         'harga',
         'stok',
         'status',
@@ -21,12 +22,11 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'gambar' => 'array', // Laravel otomatis handle JSON ke Array
+        'gambar' => 'array',
         'harga'  => 'double',
         'stok'   => 'integer',
     ];
 
-    // Agar first_image_url otomatis muncul di data JSON/Inertia
     protected $appends = ['first_image_url'];
 
     public function ulasans(): HasMany

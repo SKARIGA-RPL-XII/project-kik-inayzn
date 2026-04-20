@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
 import Sidebar from '@/components/sidebar'; 
 import Header from '@/components/sidebar-header'; 
-import { ImagePlus, X, Loader2, Phone } from 'lucide-react';
+import { ImagePlus, X, Loader2, Phone, Tag } from 'lucide-react';
 
 interface EditProps {
     produk: any;
@@ -13,12 +13,13 @@ interface FormState {
     _method: string;
     nama_produk: string;
     kategori: string;
+    tipe_penawaran: string; 
     harga: string | number;
     status: string;
     stok: string | number;
     no_agen: string;
     deskripsi: string;
-    gambar: File[]; // Hanya untuk file baru
+    gambar: File[]; 
     existing_images: string[]; 
 }
 
@@ -42,12 +43,13 @@ export default function EditProduk({ produk, categories }: EditProps) {
         _method: 'PUT', 
         nama_produk: produk.nama_produk || '',
         kategori: produk.kategori || '',
+        tipe_penawaran: produk.tipe_penawaran || produk.tipe || 'dijual', 
         harga: produk.harga || '',
         status: produk.status?.toLowerCase() || 'aktif',
         stok: produk.stok || '',
         no_agen: produk.no_agen || '',
         deskripsi: produk.deskripsi || '',
-        gambar: [], // Mulai dengan array kosong
+        gambar: [], 
         existing_images: normalizedExistingImages, 
     });
 
@@ -56,27 +58,27 @@ export default function EditProduk({ produk, categories }: EditProps) {
         setData(field, sanitizedValue);
     };
 
-    useEffect(() => {
-        if (data.gambar.length > 0) {
-            const objectUrls = data.gambar.map(file => URL.createObjectURL(file));
-            setImagePreviews(objectUrls);
-            return () => objectUrls.forEach(url => URL.revokeObjectURL(url));
-        } else {
-            setImagePreviews([]);
-        }
-    }, [data.gambar]);
-
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const filesArray = Array.from(e.target.files);
-            // Tambahkan file baru ke array gambar
+            const newPreviews = filesArray.map(file => URL.createObjectURL(file));
+            
+            setImagePreviews(prev => [...prev, ...newPreviews]);
             setData('gambar', [...data.gambar, ...filesArray]);
         }
     };
 
     const removeNewImage = (index: number) => {
+        URL.revokeObjectURL(imagePreviews[index]);
+        setImagePreviews(prev => prev.filter((_, i) => i !== index));
         setData('gambar', data.gambar.filter((_, i) => i !== index));
     };
+
+    useEffect(() => {
+        return () => {
+            imagePreviews.forEach(url => URL.revokeObjectURL(url));
+        };
+    }, []);
 
     const handleRemoveOldImage = (pathToRemove: string) => {
         const updatedExisting = data.existing_images.filter(path => path !== pathToRemove);
@@ -88,7 +90,6 @@ export default function EditProduk({ produk, categories }: EditProps) {
         clearErrors();
         
         let hasError = false;
-
         if (!data.nama_produk) { setError('nama_produk', 'Nama properti wajib diisi'); hasError = true; }
         if (!data.kategori) { setError('kategori', 'Pilih kategori terlebih dahulu'); hasError = true; }
         if (!data.harga) { setError('harga', 'Harga wajib diisi'); hasError = true; }
@@ -103,26 +104,12 @@ export default function EditProduk({ produk, categories }: EditProps) {
 
         if (hasError) return;
 
-        // --- PERBAIKAN LOGIC PENGIRIMAN ---
-        // Karena Laravel 'gambar.*' mengharuskan file, kita hanya kirim 'gambar' 
-        // jika beneran ada file baru yang dipilih.
-        
-        const payload = { ...data };
-        if (data.gambar.length === 0) {
-            // @ts-ignore
-            delete payload.gambar; // Hapus key gambar jika kosong agar tidak kena validasi image
-        }
-
         post(`/produk/${produk.id}`, {
-            ...payload,
+            ...data,
             forceFormData: true,
             preserveScroll: false,
-            onSuccess: () => {
-                console.log("Update Berhasil");
-            },
-            onError: (err) => {
-                console.error("Terjadi kesalahan:", err);
-            }
+            onSuccess: () => console.log("Update Berhasil"),
+            onError: (err) => console.error("Terjadi kesalahan:", err)
         });
     };
 
@@ -150,7 +137,7 @@ export default function EditProduk({ produk, categories }: EditProps) {
                                     <label className="text-sm font-bold">Nama Properti<span className="text-red-500">*</span></label>
                                     <input
                                         type="text"
-                                        placeholder="Contoh: Rumah Mewah Minimalis"
+                                        placeholder="Masukkan nama properti"
                                         value={data.nama_produk}
                                         onChange={e => setData('nama_produk', e.target.value)}
                                         className={`w-full p-3 rounded-lg border ${errors.nama_produk ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200'} focus:border-[#1A4D2E] outline-none transition-all`}
@@ -158,17 +145,41 @@ export default function EditProduk({ produk, categories }: EditProps) {
                                     {errors.nama_produk && <p className="text-red-600 text-[11px] font-medium">{errors.nama_produk}</p>}
                                 </div>
 
-                                {/* Status */}
+                                {/* Status Listing */}
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold">Status</label>
+                                    <label className="text-sm font-bold">Status Listing</label>
                                     <select 
                                         value={data.status}
                                         onChange={e => setData('status', e.target.value)}
-                                        className="w-full p-3 rounded-lg border border-slate-200 focus:border-[#1A4D2E] outline-none bg-white capitalize"
+                                        className="w-full p-3 rounded-lg border border-slate-200 focus:border-[#1A4D2E] outline-none bg-white"
                                     >
                                         <option value="aktif">Aktif</option>
                                         <option value="nonaktif">Nonaktif</option>
                                     </select>
+                                </div>
+
+                                {/* Tipe Penawaran (Custom Button Style) */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Tipe Penawaran<span className="text-red-500">*</span></label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('tipe_penawaran', 'dijual')}
+                                            className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all font-medium ${data.tipe_penawaran === 'dijual' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'}`}
+                                        >
+                                            <Tag size={18} className={data.tipe_penawaran === 'dijual' ? 'text-emerald-500' : 'text-slate-400'} />
+                                            Dijual
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('tipe_penawaran', 'disewa')}
+                                            className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all font-medium ${data.tipe_penawaran === 'disewa' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'}`}
+                                        >
+                                            <Tag size={18} className={data.tipe_penawaran === 'disewa' ? 'text-emerald-500' : 'text-slate-400'} />
+                                            Disewakan
+                                        </button>
+                                    </div>
+                                    {errors.tipe_penawaran && <p className="text-red-600 text-[11px] font-medium">{errors.tipe_penawaran}</p>}
                                 </div>
 
                                 {/* Kategori */}
@@ -187,7 +198,7 @@ export default function EditProduk({ produk, categories }: EditProps) {
                                     {errors.kategori && <p className="text-red-600 text-[11px] font-medium">{errors.kategori}</p>}
                                 </div>
 
-                                {/* Stok */}
+                                {/* Stok Unit */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold">Stok Unit<span className="text-red-500">*</span></label>
                                     <input
@@ -200,9 +211,9 @@ export default function EditProduk({ produk, categories }: EditProps) {
                                     {errors.stok && <p className="text-red-600 text-[11px] font-medium">{errors.stok}</p>}
                                 </div>
 
-                                {/* Harga */}
+                                {/* Harga Jual */}
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold">Harga Jual<span className="text-red-500">*</span></label>
+                                    <label className="text-sm font-bold">Harga {data.tipe_penawaran === 'dijual' ? 'Jual' : 'Sewa'}<span className="text-red-500">*</span></label>
                                     <div className="relative">
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600">Rp</span>
                                         <input
@@ -216,7 +227,7 @@ export default function EditProduk({ produk, categories }: EditProps) {
                                     {errors.harga && <p className="text-red-600 text-[11px] font-medium">{errors.harga}</p>}
                                 </div>
 
-                                {/* No Agen */}
+                                {/* No WhatsApp Agen */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold">No. WhatsApp Agen<span className="text-red-500">*</span></label>
                                     <div className="relative">
@@ -230,7 +241,7 @@ export default function EditProduk({ produk, categories }: EditProps) {
                                             className={`w-full p-3 pl-12 rounded-lg border ${errors.no_agen ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200'} focus:border-[#1A4D2E] outline-none`}
                                         />
                                     </div>
-                                    <p className="text-[10px] text-slate-400 italic">*Gunakan kode negara (62)</p>
+                                    <p className="text-[10px] text-slate-400 italic">*Gunakan kode negara (Contoh: 62878...)</p>
                                     {errors.no_agen && <p className="text-red-600 text-[11px] font-medium">{errors.no_agen}</p>}
                                 </div>
                             </div>
@@ -243,7 +254,7 @@ export default function EditProduk({ produk, categories }: EditProps) {
                                     value={data.deskripsi}
                                     onChange={e => setData('deskripsi', e.target.value)}
                                     className={`w-full p-4 rounded-lg border ${errors.deskripsi ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200'} focus:border-[#1A4D2E] outline-none resize-none transition-all`}
-                                    placeholder="Jelaskan detail properti..."
+                                    placeholder="Jelaskan detail produk..."
                                 ></textarea>
                                 {errors.deskripsi && <p className="text-red-600 text-[11px] font-medium">{errors.deskripsi}</p>}
                             </div>
